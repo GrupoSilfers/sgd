@@ -390,6 +390,7 @@
                 const cor = cores[p.status] || '#94a3b8';
                 const ativo = p.id === AppEngine.itemAtivoId ? 'item-active' : '';
                 return `<div class="item-sidebar-container flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-slate-50 ${ativo}" onclick="RenderEngine.abrirDetalhes('${p.id}')">
+                    <span class="handle text-slate-300 cursor-grab"><i data-lucide="grip-vertical" class="w-3 h-3"></i></span>
                     <span style="width:8px;height:8px;border-radius:50%;background:${cor};flex-shrink:0"></span>
                     <span class="flex-1 text-xs truncate">${p.nome}</span>
                     <span class="print-indicator ${p.imprimirItem!==false?'print-active':''}" onclick="event.stopPropagation();RenderEngine.toggleImp('${p.id}')"><i data-lucide="printer" class="w-3 h-3"></i></span>
@@ -398,6 +399,16 @@
             document.getElementById('lista-ativa').innerHTML = ativas.map(renderItem).join('');
             document.getElementById('lista-especial').innerHTML = especiais.map(renderItem).join('');
             lucide.createIcons();
+            Sortable.create(document.getElementById('lista-ativa'), { animation: 150, handle: '.handle', onEnd: async () => {
+                const ids = Array.from(document.querySelectorAll('#lista-ativa .item-sidebar-container')).map(el => el.getAttribute('onclick').match(/'([^']+)'/)[1]);
+                ids.forEach((id, i) => { const item = AppEngine.db.find(x => x.id === id); if(item) item._order = i; });
+                await StorageService.setData(AppEngine.db);
+            }});
+            Sortable.create(document.getElementById('lista-especial'), { animation: 150, handle: '.handle', onEnd: async () => {
+                const ids = Array.from(document.querySelectorAll('#lista-especial .item-sidebar-container')).map(el => el.getAttribute('onclick').match(/'([^']+)'/)[1]);
+                ids.forEach((id, i) => { const item = AppEngine.db.find(x => x.id === id); if(item) item._order = i; });
+                await StorageService.setData(AppEngine.db);
+            }});
         },
 
         async abrirDetalhes(id) {
@@ -465,7 +476,7 @@
         renderizarPadraoExecutivo() {
             const painel = document.getElementById('painel-rolagem'); Navigation.voltarParaApp();
             document.getElementById('report-toolbar').style.display='flex'; document.getElementById('topo-app').classList.add('hidden'); document.getElementById('sidebar-listas').classList.add('hidden');
-            let html = `<div id="folha-print" class="folha-a4 doc-body"><div class="header-infra"><img src="https://i.imgur.com/u57GgY0.png"></div><div class="relatorio-titulo">RELATÓRIO SEMANAL Nº ${AppEngine.config.semana.replace(/\D/g,"")}/2026/${AppEngine.config.tituloComp}</div><div class="data-extenso">Brasília, ${new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'})}</div><div class="mb-6"><strong>Assunto:</strong> Levantamento de Demandas - Período: ${AppEngine.config.periodo}</div>`;
+            let html = `<div id="folha-print" class="folha-a4 doc-body"><div class="header-infra"><img src="https://www.infrasa.gov.br/wp-content/uploads/2023/04/infrasa-logo-2048x364.png"></div><div class="relatorio-titulo">RELATÓRIO SEMANAL Nº ${AppEngine.config.semana.replace(/\D/g,"")}/2026/${AppEngine.config.tituloComp}</div><div class="data-extenso">Brasília, ${new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'})}</div><div class="mb-6"><strong>Assunto:</strong> Levantamento de Demandas - Período: ${AppEngine.config.periodo}</div>`;
             AppEngine.db.forEach((item,index) => {
                 if(item.imprimirItem===false) return;
                 const cor = item.status==='especial'?'#ef4444':item.status==='pendente'?'#facc15':item.status==='andamento'?'#3b82f6':'#10b981';
