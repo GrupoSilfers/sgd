@@ -510,7 +510,13 @@
             copiarTexto() { navigator.clipboard.writeText(document.getElementById('folha-print').innerText).then(() => alert("Copiado!")); }
         };
 
-        document.addEventListener('DOMContentLoaded', () => AppEngine.init());
+        document.addEventListener('DOMContentLoaded', () => {
+            // Expose to global scope so onclick= handlers work
+            window.AppEngine = AppEngine;
+            window.Navigation = Navigation;
+            window.RenderEngine = RenderEngine;
+            AppEngine.init();
+        });
         window.addEventListener('keydown', e => { if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); AppEngine.salvarAlteracoesPagina(); } });
     </script>
 </body>
