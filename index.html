@@ -8,10 +8,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-
     <style>
         :root { --infra-dark: #2c3e50; --infra-blue: #34495e; --infra-green: #1abc9c; }
         .item-active { background-color: rgba(26, 188, 156, 0.1); border-right: 4px solid var(--infra-green); margin-right: 4px; }
@@ -30,8 +26,10 @@
         .icon-btn { color: #64748b; transition: all 0.2s; cursor: pointer; background: none; border: none; outline: none; }
         .icon-btn:hover { color: var(--infra-green); transform: scale(1.1); }
         #painel-rolagem { scrollbar-gutter: stable; overflow-y: auto; background-color: #f1f5f9; }
+        
         .folha-a4 { background: white; width: 210mm; min-height: 297mm; padding: 20mm; margin: 20px auto; box-shadow: 0 0 20px rgba(0,0,0,0.05); color: #333; position: relative; }
         .folha-a4 div { white-space: pre-wrap; word-wrap: break-word; }
+        
         .header-infra { text-align: center; margin-bottom: 20px; }
         .header-infra img { height: 45px; margin: 0 auto; display: block; }
         .doc-body { font-family: Arial, sans-serif; line-height: 1.3; text-align: justify; font-size: 10pt; }
@@ -46,7 +44,7 @@
         .secao-card { background: white; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem; overflow: hidden; }
         .secao-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 16px; font-size: 11px; font-weight: normal; color: var(--infra-blue); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
         .textarea-processo { padding: 16px; min-height: 100px; outline: none; color: #475569; white-space: pre-wrap; line-height: 1.6; font-size: 14px; }
-        .header-especial-full { background-color: #1e293b; padding: 10px 16px; font-size: 10px; font-weight: normal; color: white; text-transform: uppercase; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between; }
+        .header-especial-full { background-color: #1e293b; padding: 10px 16px; font-size: 10px; font-weight: 900; color: white; text-transform: uppercase; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between; }
         .print-indicator { color: #cbd5e1; transition: opacity 0.2s; opacity: 0; }
         .item-sidebar-container:hover .print-indicator { opacity: 1; }
         .print-indicator.print-active { opacity: 1 !important; color: #ef4444 !important; }
@@ -142,6 +140,7 @@
         </div>
     </div>
 
+    <!-- Modais -->
     <div id="modal-user" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden">
         <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
             <h3 class="text-lg font-bold mb-4">Configurar Usuário</h3>
@@ -178,90 +177,93 @@
     </button>
 
     <script>
-    // Configurações do seu Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyCBo8BUsjqM0lrKlRCSxOcIBWsBB0J7REs",
-      authDomain: "sgd1-9f9ab.firebaseapp.com",
-      projectId: "sgd1-9f9ab",
-      storageBucket: "sgd1-9f9ab.firebasestorage.app",
-      messagingSenderId: "644440649174",
-      appId: "1:644440649174:web:e85490e18007e861e80877"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const dbFirestore = firebase.firestore();
-
     const formatarDT = (dataEntrada) => {
         if (!dataEntrada) return "";
         let d;
-        if (dataEntrada.includes('T') || !isNaN(Date.parse(dataEntrada))) { d = new Date(dataEntrada); }
-        else { const partes = dataEntrada.match(/\d+/g); if (partes && partes.length >= 5) return `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[2]} ${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`; return dataEntrada; }
+        if (dataEntrada.includes('T') || !isNaN(Date.parse(dataEntrada))) {
+            d = new Date(dataEntrada);
+        } else {
+            const partes = dataEntrada.match(/\d+/g);
+            if (partes && partes.length >= 5) {
+                return `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[2]} ${partes[3].padStart(2, '0')}:${partes[4].padStart(2, '0')}`;
+            }
+            return dataEntrada; 
+        }
         const pad = (n) => n.toString().padStart(2, '0');
         return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    const LOGO_INFRA_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAAtCAYAAAC93T7mAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAALJSURBVHgB7VpNTsMwEB6p9Ar9C8SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh8SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh/T/8wdWAnw7ZIdr7AAAAABJRU5ErkJggg==";
+    const LOGO_INFRA_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAAtCAYAAAC93T7mAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAALJSURBVHgB7VpNTsMwEB6p9Ar9C8SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh8SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh9SOf8IBmAsS90C4S9wB4pI79A69AydALkhsh/T/8wdWAnw7ZIdr7AAAAABJRU5ErkJggg==";
 
     const StorageService = {
-        CONFIG_DOC: 'main_config',
-        getData: async () => { const snap = await dbFirestore.collection("demandas").get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); },
-        setData: async (item) => { await dbFirestore.collection("demandas").doc(item.id).set(item, { merge: true }); },
-        getConfig: async () => { const doc = await dbFirestore.collection("configs").doc(StorageService.CONFIG_DOC).get(); return doc.exists ? doc.data() : { subtitulo: "GEPEM", semana: "Semana 14", periodo: "30/03 a 03/04/2026", userName: "Ezequiel G. Ferreira", userRole: "Gestor Substituto", userImg: "https://i.imgur.com/8K9pY7u.png", tituloComp: "GEPEM/SUINM/DIMEI-INFRASA" }; },
-        setConfig: async (config) => { await dbFirestore.collection("configs").doc(StorageService.CONFIG_DOC).set(config); },
-        getLogs: async (id) => { const snap = await dbFirestore.collection("demandas").doc(id).collection("logs").orderBy("data", "desc").get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); },
-        addLog: async (id, log) => { await dbFirestore.collection("demandas").doc(id).collection("logs").add(log); },
-        updateLog: async (id, logId, logData) => { await dbFirestore.collection("demandas").doc(id).collection("logs").doc(logId).update(logData); },
-        deleteLog: async (id, logId) => { await dbFirestore.collection("demandas").doc(id).collection("logs").doc(logId).delete(); }
+        DB_KEY: 'gestao_v6_data',
+        CONFIG_KEY: 'gestao_config',
+        getData: () => JSON.parse(localStorage.getItem(StorageService.DB_KEY)) || [],
+        setData: (data) => localStorage.setItem(StorageService.DB_KEY, JSON.stringify(data)),
+        getConfig: () => JSON.parse(localStorage.getItem(StorageService.CONFIG_KEY)) || { subtitulo: "GEPEM", semana: "Semana 13", periodo: "22/03 a 27/03/2026", userName: "Ezequiel G. Ferreira", userRole: "Gestor Substituto", userImg: "https://i.imgur.com/8K9pY7u.png", tituloComp: "GEPEM/SUINM/DIMEI-INFRASA" },
+        setConfig: (config) => localStorage.setItem(StorageService.CONFIG_KEY, JSON.stringify(config)),
+        getLogs: (id) => JSON.parse(localStorage.getItem('logs-' + id)) || [],
+        setLogs: (id, logs) => localStorage.setItem('logs-' + id, JSON.stringify(logs))
     };
 
     const AppEngine = {
-        db: [], config: {}, itemAtivoId: null,
-        async init() { 
-            this.config = await StorageService.getConfig(); 
-            this.db = await StorageService.getData(); 
-            this.aplicarConfig(); 
-            RenderEngine.renderListas(); 
-            lucide.createIcons(); 
-        },
+        db: StorageService.getData(),
+        config: StorageService.getConfig(),
+        itemAtivoId: null,
+        init() { this.aplicarConfig(); RenderEngine.renderListas(); lucide.createIcons(); },
         aplicarConfig() {
-            document.getElementById('display-subtitulo').innerText = this.config.subtitulo || "ÁREA";
-            document.getElementById('display-semana').innerText = this.config.semana || "SEMANA";
-            document.getElementById('display-periodo').innerText = this.config.periodo || "PERÍODO";
-            document.getElementById('user-name-sidebar').innerText = this.config.userName || "USUÁRIO";
-            document.getElementById('user-role-sidebar').innerText = this.config.userRole || "CARGO";
-            document.getElementById('user-img-sidebar').src = this.config.userImg || "";
+            document.getElementById('display-subtitulo').innerText = this.config.subtitulo;
+            document.getElementById('display-semana').innerText = this.config.semana;
+            document.getElementById('display-periodo').innerText = this.config.periodo;
+            document.getElementById('user-name-sidebar').innerText = this.config.userName;
+            document.getElementById('user-role-sidebar').innerText = this.config.userRole;
+            document.getElementById('user-img-sidebar').src = this.config.userImg;
         },
-        async salvarConfig() {
+        salvarConfig() {
             const modals = { 'modal-user': () => { this.config.userName = document.getElementById('input-username').value; this.config.userRole = document.getElementById('input-userrole').value; }, 'modal-gestao': () => { this.config.subtitulo = document.getElementById('input-subtitulo').value; this.config.semana = document.getElementById('input-semana').value; this.config.periodo = document.getElementById('input-periodo').value; }, 'modal-titulo': () => { this.config.tituloComp = document.getElementById('input-titulo-comp').value; } };
             Object.keys(modals).forEach(id => { if(!document.getElementById(id).classList.contains('hidden')) modals[id](); });
-            await StorageService.setConfig(this.config); this.aplicarConfig(); Navigation.fecharModais();
+            StorageService.setConfig(this.config); this.aplicarConfig(); Navigation.fecharModais();
         },
-        async adicionarNovaDemanda() {
+        adicionarNovaDemanda() {
             const novaId = Date.now().toString();
             const nova = { id: novaId, nome: 'NOVA DEMANDA', dataReg: formatarDT(new Date().toISOString()), status: 'pendente', grupo: 'ativa', processo: '', passos: [], imprimirItem: true };
-            await StorageService.setData(nova); this.db.push(nova); RenderEngine.renderListas(); RenderEngine.abrirDetalhes(novaId);
+            this.db.push(nova); StorageService.setData(this.db); RenderEngine.renderListas(); RenderEngine.abrirDetalhes(novaId);
         },
-        async salvarAlteracoesPagina() {
+        salvarAlteracoesPagina() {
             if (!this.itemAtivoId) return;
             const item = this.db.find(i => i.id === this.itemAtivoId);
             item.nome = document.getElementById('edit-nome').innerText;
             item.status = document.getElementById('edit-status').value;
             item.processo = document.getElementById('edit-processo').innerText;
-            await StorageService.setData(item); RenderEngine.renderListas();
+            StorageService.setData(this.db); RenderEngine.renderListas();
             const btn = document.getElementById('btn-salvar-geral'); btn.innerText = '✔ SALVO';
             setTimeout(() => { btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i><span><u>S</u>ALVAR ALTERAÇÕES</span>'; lucide.createIcons(); }, 2000);
         },
-        async lancarLog(id) {
+        lancarLog(id) {
             const input = document.getElementById('log-input'); const texto = input.innerText.trim();
             if (!texto) return;
-            await StorageService.addLog(id, { data: new Date().toISOString(), texto: texto, imprimir: true });
-            input.innerText = ''; RenderEngine.toggleLogArea(); RenderEngine.updateLogUI(id);
+            const logs = StorageService.getLogs(id);
+            logs.push({ data: new Date().toISOString(), texto: texto, imprimir: true });
+            StorageService.setLogs(id, logs); input.innerText = ''; RenderEngine.toggleLogArea(); RenderEngine.updateLogUI(id);
+        },
+        exportarBackup() {
+            const b = { db: this.db, logs: {} }; this.db.forEach(i => b.logs[i.id] = StorageService.getLogs(i.id));
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: "application/json" }));
+            a.download = `BACKUP_SGD.json`; a.click();
+        },
+        importarBackup(e) {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const data = JSON.parse(ev.target.result); this.db = data.db; StorageService.setData(this.db);
+                Object.keys(data.logs).forEach(k => StorageService.setLogs(k, data.logs[k])); location.reload();
+            };
+            reader.readAsText(e.target.files[0]);
         },
         alterarFoto(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = async ev => { this.config.userImg = ev.target.result; document.getElementById('user-img-sidebar').src = ev.target.result; await StorageService.setConfig(this.config); };
+                reader.onload = ev => { this.config.userImg = ev.target.result; document.getElementById('user-img-sidebar').src = ev.target.result; StorageService.setConfig(this.config); };
                 reader.readAsDataURL(file);
             }
         }
@@ -269,7 +271,10 @@
 
     const Navigation = {
         toggleSidebar() { document.getElementById('sidebar-infra').classList.toggle('collapsed'); lucide.createIcons(); },
-        toggleSubmenu(id) { const s = document.getElementById('sidebar-infra'); if (s.classList.contains('collapsed')) s.classList.remove('collapsed'); document.getElementById(id).classList.toggle('open'); lucide.createIcons(); },
+        toggleSubmenu(id) { 
+            const s = document.getElementById('sidebar-infra'); if (s.classList.contains('collapsed')) s.classList.remove('collapsed');
+            document.getElementById(id).classList.toggle('open'); lucide.createIcons();
+        },
         toggleModal(id) {
             const m = document.getElementById(id);
             if (m.classList.contains('hidden')) {
@@ -280,7 +285,12 @@
             m.classList.toggle('hidden');
         },
         fecharModais() { document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); },
-        voltarParaApp() { document.getElementById('report-toolbar').style.display = 'none'; document.getElementById('topo-app').classList.remove('hidden'); document.getElementById('sidebar-listas').classList.remove('hidden'); if (AppEngine.itemAtivoId) RenderEngine.abrirDetalhes(AppEngine.itemAtivoId); }
+        voltarParaApp() { 
+            document.getElementById('report-toolbar').style.display = 'none'; 
+            document.getElementById('topo-app').classList.remove('hidden'); 
+            document.getElementById('sidebar-listas').classList.remove('hidden'); 
+            if (AppEngine.itemAtivoId) RenderEngine.abrirDetalhes(AppEngine.itemAtivoId); 
+        }
     };
 
     const RenderEngine = {
@@ -301,95 +311,195 @@
             if (filtro !== 'todos') items = items.filter(i => i.status === filtro);
             items.sort((a, b) => ordem === 'asc' ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome));
             items.forEach(p => {
-                const dotColor = p.status === 'urgente' ? 'bg-red-500' : p.status === 'pendente' ? 'bg-yellow-400' : p.status === 'andamento' ? 'bg-blue-500' : p.status === 'aguardando' ? 'bg-white border border-slate-300' : p.status === 'concluido' ? 'bg-emerald-500' : 'bg-slate-300';
+                // Sincronização de cores solicitada: 
+                // Aguardando (⚪) -> slate-200 ou border-slate-300
+                // Concluído (🟢) -> emerald-500
+                const dotColor = p.status === 'urgente' ? 'bg-red-500' : 
+                                 p.status === 'pendente' ? 'bg-yellow-400' : 
+                                 p.status === 'andamento' ? 'bg-blue-500' : 
+                                 p.status === 'aguardando' ? 'bg-white border border-slate-300' : 
+                                 p.status === 'concluido' ? 'bg-emerald-500' : 'bg-slate-300';
+                
                 const div = document.createElement('div');
                 div.className = `p-4 border-b flex justify-between items-center cursor-pointer hover:bg-slate-50 item-sidebar-container ${AppEngine.itemAtivoId === p.id ? 'item-active' : ''}`;
                 div.setAttribute('data-id', p.id); div.onclick = () => this.abrirDetalhes(p.id);
                 div.innerHTML = `<div class="flex items-center gap-2"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-3 h-3"></i></div><div class="text-[11px] uppercase text-slate-700">${p.nome}</div></div><div class="flex items-center gap-3"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
                 container.appendChild(div);
             });
-            Sortable.create(container, { group: 'sidebar', animation: 150, handle: '.handle', onEnd: async (e) => { const item = AppEngine.db.find(i => i.id === e.item.getAttribute('data-id')); if (item) { item.grupo = e.to.id === 'lista-especial' ? 'especial' : 'ativa'; await StorageService.setData(item); setTimeout(() => this.renderListas(), 50); } }});
+            Sortable.create(container, { group: 'sidebar', animation: 150, handle: '.handle', onEnd: (e) => {
+                const item = AppEngine.db.find(i => i.id === e.item.getAttribute('data-id'));
+                if (item) { item.grupo = e.to.id === 'lista-especial' ? 'especial' : 'ativa'; StorageService.setData(AppEngine.db); setTimeout(() => this.renderListas(), 50); }
+            }});
         },
-        async abrirDetalhes(id) {
+        abrirDetalhes(id) {
             AppEngine.itemAtivoId = id; const p = AppEngine.db.find(i => i.id === id); this.renderListas();
-            const painel = document.getElementById('painel-rolagem'); document.getElementById('btn-salvar-geral').classList.remove('hidden');
+            const painel = document.getElementById('painel-rolagem'); 
+            document.getElementById('btn-salvar-geral').classList.remove('hidden');
             painel.innerHTML = `<div class="max-w-5xl mx-auto"><div class="flex justify-between items-start mb-6 border-b pb-6"><div><h2 contenteditable="true" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2><p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg}</p></div><div class="flex gap-2"><select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" class="p-2 border rounded font-normal text-[10px] bg-white"><option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option><option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option><option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option><option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option><option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option></select><button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="secao-card"><div class="secao-header"><span>Contexto</span></div><div contenteditable="true" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div></div><div class="secao-card"><div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div id="logs-container" class="p-4 space-y-3"></div><div id="input-log-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div><div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div><div class="secao-card"><div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div class="p-4"><ul id="prioridades-sort" class="space-y-2">${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div><div contenteditable="true" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space: pre-wrap; word-break: break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}</ul></div><div id="input-pendencia-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div><div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div></div>`;
-            await this.updateLogUI(id);
-            Sortable.create(document.getElementById('prioridades-sort'), { animation: 150, handle: '.handle', onEnd: async () => { p.passos = Array.from(document.querySelectorAll('#prioridades-sort [contenteditable]')).map(el => el.innerText); await StorageService.setData(p); }});
+            this.updateLogUI(id);
+            Sortable.create(document.getElementById('prioridades-sort'), { animation: 150, handle: '.handle', onEnd: () => { p.passos = Array.from(document.querySelectorAll('#prioridades-sort [contenteditable]')).map(el => el.innerText); StorageService.setData(AppEngine.db); }});
             lucide.createIcons();
         },
-        async updateLogUI(id) {
-            const logs = await StorageService.getLogs(id);
-            document.getElementById('logs-container').innerHTML = logs.map((l, i) => { return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-emerald-600 shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}','${l.id}',this.innerText)" class="flex-1 text-sm outline-none">${l.texto}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}','${l.id}')" class="text-slate-300"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}','${l.id}')" class="text-red-200 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`; }).join(''); lucide.createIcons();
+        updateLogUI(id) {
+            const logs = StorageService.getLogs(id);
+            document.getElementById('logs-container').innerHTML = [...logs].reverse().map((l, i) => {
+                const idx = logs.length - 1 - i;
+                return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-emerald-600 shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}',${idx},this.innerText)" class="flex-1 text-sm outline-none">${l.texto}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}',${idx})" class="text-slate-300"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}',${idx})" class="text-red-200 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
+            }).join(''); lucide.createIcons();
         },
         toggleLogArea() { const a = document.getElementById('input-log-area'); a.classList.toggle('hidden'); if(!a.classList.contains('hidden')) document.getElementById('log-input').focus(); },
         togglePendenciaArea() { const a = document.getElementById('input-pendencia-area'); a.classList.toggle('hidden'); if(!a.classList.contains('hidden')) document.getElementById('pendencia-input').focus(); },
-        async toggleImp(id) { let p = AppEngine.db.find(x => x.id === id); p.imprimirItem = !p.imprimirItem; await StorageService.setData(p); this.renderListas(); },
-        async toggleTodasImpressoes() { const algumMarcado = AppEngine.db.some(i => i.imprimirItem !== false); for(let item of AppEngine.db) { item.imprimirItem = !algumMarcado; await StorageService.setData(item); } this.renderListas(); },
-        async excluirDemanda(id) { if(confirm("Excluir?")){ await dbFirestore.collection("demandas").doc(id).delete(); AppEngine.db = AppEngine.db.filter(i => i.id !== id); location.reload(); }},
-        async edL(id, logId, text) { await StorageService.updateLog(id, logId, { texto: text }); },
-        async togL(id, logId) { const logs = await StorageService.getLogs(id); const l = logs.find(x => x.id === logId); await StorageService.updateLog(id, logId, { imprimir: !l.imprimir }); this.updateLogUI(id); },
-        async exL(id, logId) { if(confirm('Excluir?')){ await StorageService.deleteLog(id, logId); this.updateLogUI(id); }},
-        async editP(id, i, text) { const p = AppEngine.db.find(x => x.id === id); p.passos[i] = text; await StorageService.setData(p); },
-        async remP(id, i) { const p = AppEngine.db.find(x => x.id === id); p.passos.splice(i, 1); await StorageService.setData(p); this.abrirDetalhes(id); },
-        async addP(id) { const input = document.getElementById('pendencia-input'); if(!input.innerText.trim()) return; const p = AppEngine.db.find(x => x.id === id); p.passos.push(input.innerText); await StorageService.setData(p); this.abrirDetalhes(id); },
+        toggleImp(id) { let p = AppEngine.db.find(x => x.id === id); p.imprimirItem = !p.imprimirItem; StorageService.setData(AppEngine.db); this.renderListas(); },
+        toggleTodasImpressoes() {
+            const algumMarcado = AppEngine.db.some(i => i.imprimirItem !== false);
+            AppEngine.db.forEach(item => { item.imprimirItem = !algumMarcado; });
+            StorageService.setData(AppEngine.db); this.renderListas();
+        },
+        excluirDemanda(id) { if(confirm("Excluir?")){ AppEngine.db = AppEngine.db.filter(i => i.id !== id); localStorage.removeItem('logs-'+id); StorageService.setData(AppEngine.db); location.reload(); }},
+        edL(id, idx, text) { const l = StorageService.getLogs(id); l[idx].texto = text; StorageService.setLogs(id, l); },
+        togL(id, idx) { const l = StorageService.getLogs(id); l[idx].imprimir = !l[idx].imprimir; StorageService.setLogs(id, l); this.updateLogUI(id); },
+        exL(id, idx) { if(confirm('Excluir?')){ const l = StorageService.getLogs(id); l.splice(idx, 1); StorageService.setLogs(id, l); this.updateLogUI(id); }},
+        editP(id, i, text) { AppEngine.db.find(x => x.id === id).passos[i] = text; StorageService.setData(AppEngine.db); },
+        remP(id, i) { AppEngine.db.find(x => x.id === id).passos.splice(i, 1); StorageService.setData(AppEngine.db); this.abrirDetalhes(id); },
+        addP(id) { const input = document.getElementById('pendencia-input'); if(!input.innerText.trim()) return; AppEngine.db.find(x => x.id === id).passos.push(input.innerText); StorageService.setData(AppEngine.db); this.abrirDetalhes(id); },
 
-        async renderizarPadraoExecutivo() {
+        renderizarPadraoExecutivo() {
             const painel = document.getElementById('painel-rolagem'); Navigation.voltarParaApp();
             document.getElementById('report-toolbar').style.display = 'flex'; document.getElementById('topo-app').classList.add('hidden'); document.getElementById('sidebar-listas').classList.add('hidden');
-            let html = `<div class="folha-a4 doc-body" style="padding: 20mm 25mm;"><div class="header-infra"><img src="${LOGO_INFRA_BASE64}"></div><div class="relatorio-titulo">RELATÓRIO SEMANAL Nº ${AppEngine.config.semana.replace(/\D/g, "")}/2026/${AppEngine.config.tituloComp}</div><div class="data-extenso">Brasília, ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</div><div class="mb-6"><strong>Assunto:</strong> Levantamento de Demandas - Período: ${AppEngine.config.periodo}</div>`;
-            for (let [index, item] of AppEngine.db.filter(i => i.imprimirItem !== false).entries()) {
-                const logs = await StorageService.getLogs(item.id); const logsF = logs.filter(l => l.imprimir);
-                const cor = item.status === 'urgente' ? '#ef4444' : item.status === 'pendente' ? '#facc15' : item.status === 'andamento' ? '#3b82f6' : item.status === 'aguardando' ? '#94a3b8' : '#10b981';
-                html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? item.passos.map(px => `• ${px}`).join('\n') : 'Nenhuma.'}</div>${logsF.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logsF.map(l => `<span style="font-size: 9pt; color: #1abc9c; font-weight: bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n')}</div>` : ''}</div>`;
+            
+            const filtroAtual = document.getElementById('filter-status').value;
+            let itensFiltrados = AppEngine.db.filter(i => i.imprimirItem !== false);
+            if (filtroAtual !== 'todos') {
+                itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
             }
+
+            let html = `<div class="folha-a4 doc-body" style="padding: 20mm 25mm;"><div class="header-infra"><img src="${LOGO_INFRA_BASE64}"></div><div class="relatorio-titulo">RELATÓRIO SEMANAL Nº ${AppEngine.config.semana.replace(/\D/g, "")}/2026/${AppEngine.config.tituloComp}</div><div class="data-extenso">Brasília, ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</div><div class="mb-6"><strong>Assunto:</strong> Levantamento de Demandas - Período: ${AppEngine.config.periodo}</div>`;
+            
+            itensFiltrados.forEach((item, index) => {
+                const logs = StorageService.getLogs(item.id).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
+                const cor = item.status === 'urgente' ? '#ef4444' : 
+                            item.status === 'pendente' ? '#facc15' : 
+                            item.status === 'andamento' ? '#3b82f6' : 
+                            item.status === 'aguardando' ? '#94a3b8' : '#10b981';
+                html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? item.passos.map(px => `• ${px}`).join('\n') : 'Nenhuma.'}</div>${logs.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logs.map(l => `<span style="font-size: 9pt; color: #1abc9c; font-weight: bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n')}</div>` : ''}</div>`;
+            });
             html += `<div class="footer-report" style="position:static; margin-top: 40px;"><span>SGD - ${AppEngine.config.tituloComp}</span><span>Gerado em: ${formatarDT(new Date())}</span></div></div>`;
             painel.innerHTML = html;
         },
 
-        async renderizarSimplificado() {
+        renderizarSimplificado() {
             const painel = document.getElementById('painel-rolagem'); Navigation.voltarParaApp();
             document.getElementById('report-toolbar').style.display='flex'; document.getElementById('topo-app').classList.add('hidden'); document.getElementById('sidebar-listas').classList.add('hidden');
-            const prefixoArea = AppEngine.config.tituloComp.split('/')[0]; const numSemana = AppEngine.config.semana.replace(/\D/g, "");
-            let htmlPaginas = ""; let cabecalho = `<div style="margin-bottom:10px; font-weight:bold; border-bottom: 2px solid #000;">${prefixoArea} - RELATÓRIO SIMPLIFICADO - SEMANA ${numSemana} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}</div>`;
-            let bufferTexto = cabecalho;
-            const itensF = AppEngine.db.filter(i => i.imprimirItem !== false);
-            for (let [index, item] of itensF.entries()) {
-                const logs = await StorageService.getLogs(item.id); const logsF = logs.filter(l => l.imprimir);
-                let dT = `\n<strong>>>> ${index + 1}. ${item.nome.toUpperCase()}</strong>\n\n`;
-                dT += `CONTEXTO:\n${item.processo || 'N/A'}\n\n`; dT += `HISTÓRICO:\n${logsF.length ? logsF.map(l => `<span style="font-size: 8.5pt; color: #1abc9c; font-weight: bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n') : 'N/A'}\n\n`; dT += `PENDÊNCIAS:\n${item.passos.length ? item.passos.map(p => `• ${p}`).join('\n') : 'Nenhuma.'}\n\n`; dT += `############################################################################################\n`;
-                bufferTexto += dT;
-                if ((index + 1) % 3 === 0 || (index + 1) === itensF.length) { htmlPaginas += `<div class="folha-a4 doc-body" style="min-height:297mm; white-space: pre-wrap; padding: 15mm;">${bufferTexto}</div>`; bufferTexto = ""; }
+            
+            const filtroAtual = document.getElementById('filter-status').value;
+            let itensFiltrados = AppEngine.db.filter(i => i.imprimirItem !== false);
+            if (filtroAtual !== 'todos') {
+                itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
             }
+
+            let htmlPaginas = "";
+            let cabecalho = `<div style="margin-bottom:10px; font-weight:bold; border-bottom: 2px solid #000;">RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana.toUpperCase()} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}</div>`;
+            
+            let bufferTexto = cabecalho;
+
+            itensFiltrados.forEach((item, index) => {
+                const logs = StorageService.getLogs(item.id)
+                    .filter(l => l.imprimir)
+                    .sort((a, b) => new Date(b.data) - new Date(a.data));
+
+                let demandaTexto = `\n<strong>>>> ${index + 1}. ${item.nome.toUpperCase()}</strong>\n\n`;
+                demandaTexto += `CONTEXTO:\n${item.processo || 'N/A'}\n\n`;
+                demandaTexto += `HISTÓRICO:\n${logs.length ? logs.map(l => `<span style="font-size: 8.5pt; color: #1abc9c; font-weight: bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n') : 'N/A'}\n\n`;
+                demandaTexto += `PENDÊNCIAS:\n${item.passos.length ? item.passos.map(p => `• ${p}`).join('\n') : 'Nenhuma.'}\n\n`;
+                demandaTexto += `############################################################################################\n`;
+
+                bufferTexto += demandaTexto;
+
+                if ((index + 1) % 3 === 0 || (index + 1) === itensFiltrados.length) {
+                    htmlPaginas += `<div class="folha-a4 doc-body" style="min-height:297mm; white-space: pre-wrap; padding: 15mm;">${bufferTexto}</div>`;
+                    bufferTexto = ""; 
+                }
+            });
             painel.innerHTML = htmlPaginas;
         },
 
         async copiarTexto() {
             try {
-                const itensF = AppEngine.db.filter(i => i.imprimirItem !== false); if (!itensF.length) return;
-                const prefixoArea = AppEngine.config.tituloComp.split('/')[0]; const numSemana = AppEngine.config.semana.replace(/\D/g, ""); const SEP = '#'.repeat(71);
-                const S = `style="margin:0;margin-bottom:0pt;padding:0;line-height:1.2;font-size:10pt;font-family:Arial,sans-serif;text-align:left;"`;
-                const lp = (html) => `<p ${S}>${html || '&nbsp;'}</p>`;
-                let corpo = '<div class="WordSection1">';
-                corpo += `<p style="margin:0;padding:0;line-height:1.2;font-size:10pt;font-family:Arial,sans-serif;font-weight:bold;text-align:left;">${prefixoArea} - RELATÓRIO SIMPLIFICADO - SEMANA ${numSemana} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}</p>`;
-                corpo += `<p style="margin:0;padding:0;line-height:1.2;font-size:10pt;font-family:Arial,sans-serif;font-weight:bold;text-align:left;">_______________________________________________________________________</p>`;
-                for (let [index, item] of itensF.entries()) {
-                    const logs = await StorageService.getLogs(item.id); const logsF = logs.filter(l => l.imprimir);
-                    corpo += lp('&nbsp;'); corpo += lp(`<strong>&gt;&gt;&gt; ${index + 1}. ${item.nome.toUpperCase()}</strong>`); corpo += lp('<strong>CONTEXTO:</strong>');
-                    if (item.processo) item.processo.split('\n').forEach(l => { if(l.trim()) corpo += lp(l.trim()); }); else corpo += lp('N/A');
-                    corpo += lp('&nbsp;'); corpo += lp('<strong>HISTÓRICO:</strong>');
-                    if (logsF.length) logsF.forEach(l => { l.texto.split('\n').forEach((linha, li) => { if (li === 0) corpo += lp(`<span style="color:#1abc9c;font-size:8pt;">${formatarDT(l.data)}</span> ${linha.trim()}`); else if(linha.trim()) corpo += lp(linha.trim()); }); }); else corpo += lp('N/A');
-                    corpo += lp('&nbsp;'); corpo += lp('<strong>PENDÊNCIAS:</strong>');
-                    if (item.passos.length) item.passos.forEach(p => p.split('\n').forEach((l, li) => { if(l.trim()) corpo += lp((li === 0 ? '• ' : '') + l.trim()); })); else corpo += lp('Nenhuma.');
-                    corpo += lp('&nbsp;'); corpo += lp(`<span style="color:#aaa;">${SEP}</span>`);
+                const filtroAtual = document.getElementById('filter-status').value;
+                let itensFiltrados = AppEngine.db.filter(i => i.imprimirItem !== false);
+                if (filtroAtual !== 'todos') {
+                    itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
                 }
-                const blob = new Blob([`<html><head><meta charset="UTF-8"></head><body>${corpo}</body></html>`], { type: 'text/html' });
-                await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]); alert("Copiado com sucesso!");
+
+                if (itensFiltrados.length === 0) { alert("Nenhum conteúdo filtrado para copiar."); return; }
+
+                const SEP = '#'.repeat(71);
+
+                const estiloWord = `
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 10pt; color: #333; }
+                    p, li { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 10pt; }
+                </style>
+                <style>
+                @page WordSection1 { size: 595.3pt 841.9pt; margin: 70.85pt 85.05pt 70.85pt 85.05pt; }
+                div.WordSection1 { page: WordSection1; }
+                p.MsoNormal, li.MsoNormal, div.MsoNormal {
+                    margin: 0cm; margin-bottom: .0001pt;
+                    font-size: 10.0pt; font-family: Arial, sans-serif;
+                    line-height: 100%;
+                }
+                </style>`;
+
+                const S = `class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:10pt;font-family:Arial,sans-serif;"`;
+                const lp  = (html) => `<p ${S}>${html || '&nbsp;'}</p>`;
+                const label = (txt) => `<span style="font-weight:600;">${txt}</span>`;
+                const dataSpan = (dt) => `<span style="color:#1abc9c;font-size:8pt;font-weight:normal;">${dt}</span>`;
+
+                let corpo = '<div class="WordSection1">';
+                corpo += `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0 0 2px 0;line-height:100%;font-size:10pt;font-family:Arial,sans-serif;font-weight:bold;border-bottom:2pt solid black;">RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana.toUpperCase()} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}</p>`;
+
+                itensFiltrados.forEach((item, index) => {
+                    const logs = StorageService.getLogs(item.id).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
+                    corpo += lp('&nbsp;');
+                    corpo += lp(`<strong>&gt;&gt;&gt; ${index + 1}. ${item.nome.toUpperCase()}</strong>`);
+                    corpo += lp(label('CONTEXTO:'));
+                    if (item.processo) item.processo.split('\n').forEach(linha => corpo += lp(linha || '&nbsp;'));
+                    else corpo += lp('N/A');
+                    corpo += lp('&nbsp;');
+                    corpo += lp(label('HISTÓRICO:'));
+                    if (logs.length) {
+                        logs.forEach(l => {
+                            l.texto.split('\n').forEach((linha, li) => {
+                                if (li === 0) corpo += lp(`${dataSpan(formatarDT(l.data))} ${linha}`);
+                                else corpo += lp(linha || '&nbsp;');
+                            });
+                        });
+                    } else corpo += lp('N/A');
+                    corpo += lp('&nbsp;');
+                    corpo += lp(label('PENDÊNCIAS:'));
+                    if (item.passos.length) {
+                        item.passos.forEach(p => {
+                            p.split('\n').forEach((linha, li) => corpo += lp((li === 0 ? '• ' : '') + (linha || '')));
+                        });
+                    } else corpo += lp('Nenhuma.');
+                    corpo += lp(`<span style="color:#aaa;">${SEP}</span>`);
+                });
+                corpo += '</div>';
+
+                const htmlCompleto = `<html><head><meta charset="UTF-8">${estiloWord}</head><body>${corpo}</body></html>`;
+                const blob = new Blob([htmlCompleto], { type: 'text/html' });
+                await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]);
+                alert("Copiado com sucesso!");
             } catch (err) { alert("Erro ao copiar."); }
         }
     };
 
-    document.getElementById('btn-pdf-trigger').onclick = () => { html2pdf().set({ margin: 10, filename: 'Relatorio.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(document.getElementById('painel-rolagem')).save(); };
+    document.getElementById('btn-pdf-trigger').onclick = () => {
+        const element = document.getElementById('painel-rolagem');
+        const opt = { margin: [10, 10, 10, 10], filename: 'Relatorio.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        html2pdf().set(opt).from(element).save();
+    };
+
     document.addEventListener('DOMContentLoaded', () => AppEngine.init());
     window.addEventListener('keydown', e => { if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); AppEngine.salvarAlteracoesPagina(); } });
     </script>
