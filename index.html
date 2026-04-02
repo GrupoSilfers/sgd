@@ -699,48 +699,107 @@
                 let itensFiltrados = AppEngine.db.filter(i => i.imprimirItem !== false);
                 if (filtroAtual !== 'todos') itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
                 if (itensFiltrados.length === 0) { alert("Nenhum conteúdo filtrado para copiar."); return; }
-                const SEP = '#'.repeat(92);
+
+                // (a) sublinhado com 92 "_"
                 const SUBLINHADO = '_'.repeat(92);
-                const totalPags = itensFiltrados.length;
-                // estiloWord inclui numeração de página via campo Word e estilos base 10pt
-                const estiloWord = `<style>body{font-family:Arial,sans-serif;font-size:10pt;color:#333;}p,li{margin:0;padding:0;font-family:Arial,sans-serif;font-size:10pt;}</style><style>@page WordSection1{size:595.3pt 841.9pt;margin:70.85pt 85.05pt 70.85pt 85.05pt;mso-footer:f1;}div.WordSection1{page:WordSection1;}p.MsoNormal,li.MsoNormal,div.MsoNormal{margin:0cm;margin-bottom:.0001pt;font-size:10.0pt;font-family:Arial,sans-serif;line-height:100%;}p.MsoFooter,li.MsoFooter,div.MsoFooter{margin:0cm;margin-bottom:.0001pt;font-size:10.0pt;font-family:Arial,sans-serif;line-height:100%;}</style>`;
-                const S = `class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:10pt;font-family:Arial,sans-serif;"`;
-                const lp  = (html) => `<p ${S}>${html || '&nbsp;'}</p>`;
-                // label: sem negrito, tamanho 11pt (f)+(e)
-                const label = (txt) => `<span style="font-weight:normal;font-size:11pt;">${txt}</span>`;
-                // data/hora: 9pt → reduzido 1 ponto de 10pt (d)
-                const dataSpan = (dt) => `<span style="color:#1abc9c;font-size:9pt;font-weight:normal;">${dt}</span>`;
+                // (g) separador com 92 "#"
+                const SEP = '#'.repeat(92);
+
+                // Estilos Word: base 10pt para tudo; rodapé ativado via mso-footer:f1
+                // (h) rodapé com número de página
+                const estiloWord = `<style>
+                    body { font-family: Arial, sans-serif; font-size: 10pt; color: #333; }
+                    p, li { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 10pt; }
+                </style><style>
+                    @page WordSection1 {
+                        size: 595.3pt 841.9pt;
+                        margin: 70.85pt 85.05pt 70.85pt 85.05pt;
+                        mso-footer: f1;
+                    }
+                    div.WordSection1 { page: WordSection1; }
+                    p.MsoNormal, li.MsoNormal, div.MsoNormal {
+                        margin: 0cm; margin-bottom: .0001pt;
+                        font-size: 10.0pt; font-family: Arial, sans-serif; line-height: 100%;
+                    }
+                    p.MsoFooter, li.MsoFooter, div.MsoFooter {
+                        margin: 0cm; margin-bottom: .0001pt;
+                        font-size: 10.0pt; font-family: Arial, sans-serif; line-height: 100%;
+                        text-align: center;
+                    }
+                </style>`;
+
+                // Parágrafo base: 10pt, sem margens (e)
+                const p10 = (html) => `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:10pt;font-family:Arial,sans-serif;">${html || '&nbsp;'}</p>`;
+                // Linha em branco — exatamente 1 linha, sem margem extra (c)(g)
+                const lb = () => p10('&nbsp;');
+                // (e)(f) CONTEXTO / HISTÓRICO / PENDÊNCIAS: 11pt, sem negrito
+                const label = (txt) => `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:11pt;font-family:Arial,sans-serif;font-weight:normal;">${txt}</p>`;
+                // (d) data/hora: 8pt
+                const dataSpan = (dt) => `<span style="color:#1abc9c;font-size:8pt;font-weight:normal;">${dt}</span>`;
+
                 let corpo = '<div class="WordSection1">';
-                // Título: 11pt, negrito, com sublinhado "_" logo abaixo (a)+(e)
+
+                // (a)(e) Título do relatório: 11pt, negrito
                 corpo += `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:11pt;font-family:Arial,sans-serif;font-weight:bold;">RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana.toUpperCase()} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}</p>`;
-                corpo += `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:10pt;font-family:Arial,sans-serif;color:#333;">${SUBLINHADO}</p>`;
+                // (a) sublinhado "_" x92 imediatamente após o título, sem linha em branco entre eles
+                corpo += p10(SUBLINHADO);
+
                 for (const [index, item] of itensFiltrados.entries()) {
                     const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
-                    // 1 linha em branco após título do relatório antes de cada demanda
-                    corpo += lp('&nbsp;');
-                    // Título da demanda: 11pt, negrito (e)
+
+                    // 1 linha em branco antes de cada demanda (c)
+                    corpo += lb();
+                    // (e) Título da demanda: 11pt, negrito
                     corpo += `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:11pt;font-family:Arial,sans-serif;font-weight:bold;">&gt;&gt;&gt; ${index + 1}. ${item.nome.toUpperCase()}</p>`;
-                    // 1 linha em branco entre título da demanda e CONTEXTO (b)
-                    corpo += lp('&nbsp;');
-                    corpo += lp(label('CONTEXTO:'));
-                    if (item.processo) item.processo.split('\n').forEach(linha => corpo += lp(linha || '&nbsp;'));
-                    else corpo += lp('N/A');
-                    // apenas 1 linha em branco entre seções (c)
-                    corpo += lp('&nbsp;');
-                    corpo += lp(label('HISTÓRICO:'));
+                    // (b) 1 linha em branco entre título da demanda e CONTEXTO
+                    corpo += lb();
+                    // (e)(f) CONTEXTO: 11pt sem negrito
+                    corpo += label('CONTEXTO:');
+                    // conteúdo do contexto: 10pt (e)
+                    if (item.processo) item.processo.split('\n').forEach(linha => corpo += p10(linha || '&nbsp;'));
+                    else corpo += p10('N/A');
+                    // (c) exatamente 1 linha em branco entre seções
+                    corpo += lb();
+                    // (e)(f) HISTÓRICO: 11pt sem negrito
+                    corpo += label('HISTÓRICO:');
+                    // conteúdo do histórico: 10pt, data em 8pt (d)(e)
                     if (logs.length) {
-                        logs.forEach(l => { l.texto.split('\n').forEach((linha, li) => { if (li === 0) corpo += lp(`${dataSpan(formatarDT(l.data))} ${linha}`); else corpo += lp(linha || '&nbsp;'); }); });
-                    } else corpo += lp('N/A');
-                    corpo += lp('&nbsp;');
-                    corpo += lp(label('PENDÊNCIAS:'));
-                    if (item.passos.length) { item.passos.forEach(p => { p.split('\n').forEach((linha, li) => corpo += lp((li === 0 ? '• ' : '') + (linha || ''))); }); }
-                    else corpo += lp('Nenhuma.');
-                    // 1 linha em branco antes do separador (g)
-                    corpo += lp('&nbsp;');
-                    corpo += lp(`<span style="color:#aaa;">${SEP}</span>`);
+                        logs.forEach(l => {
+                            l.texto.split('\n').forEach((linha, li) => {
+                                if (li === 0) corpo += p10(`${dataSpan(formatarDT(l.data))} ${linha}`);
+                                else corpo += p10(linha || '&nbsp;');
+                            });
+                        });
+                    } else corpo += p10('N/A');
+                    // (c) exatamente 1 linha em branco
+                    corpo += lb();
+                    // (e)(f) PENDÊNCIAS: 11pt sem negrito
+                    corpo += label('PENDÊNCIAS:');
+                    // conteúdo das pendências: 10pt (e)
+                    if (item.passos.length) {
+                        item.passos.forEach(p => {
+                            p.split('\n').forEach((linha, li) => corpo += p10((li === 0 ? '• ' : '') + (linha || '')));
+                        });
+                    } else corpo += p10('Nenhuma.');
+                    // (g) 1 linha em branco ANTES do separador
+                    corpo += lb();
+                    corpo += p10(`<span style="color:#aaa;">${SEP}</span>`);
+                    // (g) 1 linha em branco APÓS o separador
+                    corpo += lb();
                 }
-                // Rodapé com número de página Word (h)
-                corpo += `<div style="mso-element:footer;" id="f1"><p class="MsoFooter" style="text-align:center;font-size:10pt;font-family:Arial,sans-serif;"><!--[if supportFields]><span style="mso-element:field-begin"></span> PAGE <span style="mso-element:field-separator"></span><![endif]--><span style="mso-no-proof:yes"></span><!--[if supportFields]><span style="mso-element:field-end"></span><![endif]-->/<!--[if supportFields]><span style="mso-element:field-begin"></span> NUMPAGES <span style="mso-element:field-separator"></span><![endif]--><span style="mso-no-proof:yes"></span><!--[if supportFields]><span style="mso-element:field-end"></span><![endif]--></p></div>`;
+
+                // (h) Rodapé Word com campo PAGE/NUMPAGES centralizado
+                corpo += `<div style="mso-element:footer;" id="f1">` +
+                    `<p class="MsoFooter" style="text-align:center;font-size:10pt;font-family:Arial,sans-serif;">` +
+                    `<!--[if supportFields]><span style="mso-element:field-begin"></span>PAGE<span style="mso-element:field-separator"></span><![endif]-->` +
+                    `<span style="mso-no-proof:yes">1</span>` +
+                    `<!--[if supportFields]><span style="mso-element:field-end"></span><![endif]-->` +
+                    `/` +
+                    `<!--[if supportFields]><span style="mso-element:field-begin"></span>NUMPAGES<span style="mso-element:field-separator"></span><![endif]-->` +
+                    `<span style="mso-no-proof:yes">1</span>` +
+                    `<!--[if supportFields]><span style="mso-element:field-end"></span><![endif]-->` +
+                    `</p></div>`;
+
                 corpo += '</div>';
                 const htmlCompleto = `<html><head><meta charset="UTF-8">${estiloWord}</head><body>${corpo}</body></html>`;
                 const blob = new Blob([htmlCompleto], { type: 'text/html' });
