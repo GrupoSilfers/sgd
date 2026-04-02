@@ -700,15 +700,11 @@
                 if (filtroAtual !== 'todos') itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
                 if (itensFiltrados.length === 0) { alert("Nenhum conteúdo filtrado para copiar."); return; }
 
-                // Título do relatório com GEPEM no início
                 const tituloRel = `${AppEngine.config.subtitulo.toUpperCase()} - RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana.toUpperCase()} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}`;
-
-                // (a) sublinhado: 92 - 8 = 84 "_"
                 const SUBLINHADO = '_'.repeat(84);
-                // separador entre demandas: 92 - 21 = 71 "#"
                 const SEP = '#'.repeat(71);
 
-                // Estilos Word base 10pt, rodapé ativado via mso-footer:f1 (h)
+                // Estilos: base 10pt, margens zeradas, rodapé via mso-footer:f1
                 const estiloWord =
                     `<style>body{font-family:Arial,sans-serif;font-size:10pt;color:#333;margin:0;padding:0;}` +
                     `p,li{margin:0;margin-top:0;margin-bottom:0;padding:0;font-family:Arial,sans-serif;font-size:10pt;}</style>` +
@@ -717,23 +713,23 @@
                     `p.MsoNormal,li.MsoNormal,div.MsoNormal{margin:0cm;margin-top:0cm;margin-bottom:0cm;padding:0;font-size:10.0pt;font-family:Arial,sans-serif;line-height:100%;}` +
                     `p.MsoFooter,li.MsoFooter,div.MsoFooter{margin:0cm;margin-top:0cm;margin-bottom:0cm;padding:0;font-size:10.0pt;font-family:Arial,sans-serif;line-height:100%;text-align:center;}</style>`;
 
-                // (e) parágrafo base 10pt, margens zeradas
-                const p10 = (html) =>
-                    `<p class="MsoNormal" style="margin:0;margin-top:0;margin-bottom:0;padding:0;line-height:100%;font-size:10pt;font-family:Arial,sans-serif;">${html || '&nbsp;'}</p>`;
-                // linha em branco = exatamente 1 parágrafo vazio (c)(g)
-                const lb = () => p10('&nbsp;');
-                // (e)(f) seções CONTEXTO/HISTÓRICO/PENDÊNCIAS: 11pt, sem negrito
-                const label = (txt) =>
-                    `<p class="MsoNormal" style="margin:0;margin-top:0;margin-bottom:0;padding:0;line-height:100%;font-size:11pt;font-family:Arial,sans-serif;font-weight:normal;">${txt}</p>`;
-                // (d) data/hora: 8pt
-                const dataSpan = (dt) =>
-                    `<span style="color:#1abc9c;font-size:8pt;font-weight:normal;">${dt}</span>`;
+                // Parágrafo 10pt — conteúdo geral (e)
+                const ST = `margin:0;margin-top:0;margin-bottom:0;padding:0;line-height:100%;font-family:Arial,sans-serif;`;
+                const p10  = (html) => `<p class="MsoNormal" style="${ST}font-size:10pt;">${html || '&nbsp;'}</p>`;
+                // Linha em branco exata
+                const lb   = ()     => p10('&nbsp;');
+                // Parágrafo 11pt sem negrito — CONTEXTO / HISTÓRICO / PENDÊNCIAS (e)(f)
+                const p11  = (txt)  => `<p class="MsoNormal" style="${ST}font-size:11pt;font-weight:normal;">${txt}</p>`;
+                // Parágrafo 11pt negrito — títulos (e)
+                const p11b = (txt)  => `<p class="MsoNormal" style="${ST}font-size:11pt;font-weight:bold;">${txt}</p>`;
+                // Parágrafo 8pt — data/hora (d): parágrafo PRÓPRIO com font-size:8pt para não herdar 10pt do pai
+                const p8   = (dt, resto) => `<p class="MsoNormal" style="${ST}font-size:8pt;"><span style="color:#1abc9c;font-size:8pt;font-weight:normal;">${dt}</span><span style="font-size:10pt;"> ${resto}</span></p>`;
 
                 let corpo = '<div class="WordSection1">';
 
-                // (a)(e) Título 11pt negrito + GEPEM
-                corpo += `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:11pt;font-family:Arial,sans-serif;font-weight:bold;">${tituloRel}</p>`;
-                // (a) sublinhado imediatamente abaixo, sem linha em branco
+                // Título 11pt negrito (e)
+                corpo += p11b(tituloRel);
+                // Sublinhado colado imediatamente abaixo (a)
                 corpo += p10(SUBLINHADO);
 
                 for (const [index, item] of itensFiltrados.entries()) {
@@ -741,58 +737,56 @@
                         .filter(l => l.imprimir)
                         .sort((a, b) => new Date(b.data) - new Date(a.data));
 
-                    // 1 linha em branco antes do título da demanda
                     corpo += lb();
-                    // (e) título da demanda: 11pt negrito
-                    corpo += `<p class="MsoNormal" style="margin:0;margin-bottom:0;padding:0;line-height:100%;font-size:11pt;font-family:Arial,sans-serif;font-weight:bold;">&gt;&gt;&gt; ${index + 1}. ${item.nome.toUpperCase()}</p>`;
-                    // (b) 1 linha em branco entre título da demanda e CONTEXTO
+                    // Título da demanda 11pt negrito (e)
+                    corpo += p11b(`&gt;&gt;&gt; ${index + 1}. ${item.nome.toUpperCase()}`);
+                    // 1 linha em branco antes de CONTEXTO
                     corpo += lb();
-                    // (e)(f) CONTEXTO 11pt sem negrito
-                    corpo += label('CONTEXTO:');
-                    // (e) conteúdo 10pt
+                    // CONTEXTO 11pt sem negrito (e)(f)
+                    corpo += p11('CONTEXTO:');
+                    // Conteúdo 10pt (e)
                     if (item.processo) item.processo.split('\n').forEach(linha => corpo += p10(linha || '&nbsp;'));
                     else corpo += p10('N/A');
-                    // (c) exatamente 1 linha em branco entre seções
+                    // 1 linha em branco entre seções (c)
                     corpo += lb();
-                    // (e)(f) HISTÓRICO 11pt sem negrito
-                    corpo += label('HISTÓRICO:');
-                    // (d)(e) conteúdo 10pt, data 8pt
+                    // HISTÓRICO 11pt sem negrito (e)(f)
+                    corpo += p11('HISTÓRICO:');
+                    // Data 8pt em parágrafo próprio; resto do texto 10pt (d)(e)
                     if (logs.length) {
                         logs.forEach(l => {
-                            l.texto.split('\n').forEach((linha, li) => {
-                                if (li === 0) corpo += p10(`${dataSpan(formatarDT(l.data))} ${linha}`);
+                            const linhas = l.texto.split('\n');
+                            linhas.forEach((linha, li) => {
+                                if (li === 0) corpo += p8(formatarDT(l.data), linha);
                                 else corpo += p10(linha || '&nbsp;');
                             });
                         });
                     } else corpo += p10('N/A');
-                    // (c) exatamente 1 linha em branco
+                    // 1 linha em branco (c)
                     corpo += lb();
-                    // (e)(f) PENDÊNCIAS 11pt sem negrito
-                    corpo += label('PENDÊNCIAS:');
-                    // (e) conteúdo 10pt
+                    // PENDÊNCIAS 11pt sem negrito (e)(f)
+                    corpo += p11('PENDÊNCIAS:');
+                    // Conteúdo 10pt (e)
                     if (item.passos.length) {
                         item.passos.forEach(p => {
                             p.split('\n').forEach((linha, li) => corpo += p10((li === 0 ? '• ' : '') + (linha || '')));
                         });
                     } else corpo += p10('Nenhuma.');
-                    // (g) 1 linha em branco ANTES do separador
+                    // 1 linha em branco ANTES do separador (g)
                     corpo += lb();
-                    // separador
+                    // Separador (b: SEM linha em branco depois)
                     corpo += p10(`<span style="color:#aaa;">${SEP}</span>`);
-                    // (g) 1 linha em branco APÓS o separador
-                    corpo += lb();
                 }
 
-                // (h) rodapé Word PAGE/NUMPAGES centralizado, 10pt
+                // Rodapé PAGE/NUMPAGES centralizado 10pt (h)
                 corpo +=
                     `<div style="mso-element:footer;" id="f1">` +
-                    `<p class="MsoFooter" style="text-align:center;font-size:10pt;font-family:Arial,sans-serif;">` +
+                    `<p class="MsoFooter" style="${ST}font-size:10pt;text-align:center;">` +
                     `<!--[if supportFields]><span style="mso-element:field-begin"></span>PAGE<span style="mso-element:field-separator"></span><![endif]-->` +
-                    `<span style="mso-no-proof:yes">1</span>` +
+                    `<span style="mso-no-proof:yes;font-size:10pt;">1</span>` +
                     `<!--[if supportFields]><span style="mso-element:field-end"></span><![endif]-->` +
                     `/` +
                     `<!--[if supportFields]><span style="mso-element:field-begin"></span>NUMPAGES<span style="mso-element:field-separator"></span><![endif]-->` +
-                    `<span style="mso-no-proof:yes">1</span>` +
+                    `<span style="mso-no-proof:yes;font-size:10pt;">1</span>` +
                     `<!--[if supportFields]><span style="mso-element:field-end"></span><![endif]-->` +
                     `</p></div>`;
 
