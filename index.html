@@ -393,10 +393,11 @@
             item.nome = document.getElementById('edit-nome').innerText;
             item.status = document.getElementById('edit-status').value;
             item.processo = document.getElementById('edit-processo').innerText;
-            SyncUI.show('Salvando...', 'syncing');
-            await StorageService.setData(this.db);
             RenderEngine.renderListas();
-            SyncUI.show('Salvo', 'ok');
+            SyncUI.show('Salvando...', 'syncing');
+            StorageService.setData(this.db)
+                .then(() => SyncUI.show('Salvo', 'ok'))
+                .catch(() => SyncUI.show('Erro ao salvar', 'error'));
             const btn = document.getElementById('btn-salvar-geral');
             btn.innerText = '✔ SALVO';
             setTimeout(() => { btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i><span><u>S</u>ALVAR ALTERAÇÕES</span>'; lucide.createIcons(); }, 2000);
@@ -563,32 +564,35 @@
         async toggleImp(id) {
             let p = AppEngine.db.find(x => x.id === id);
             p.imprimirItem = !p.imprimirItem;
-            SyncUI.show('Salvando...', 'syncing');
-            await StorageService.setData(AppEngine.db);
-            SyncUI.show('Salvo', 'ok');
             this.renderListas();
+            SyncUI.show('Salvando...', 'syncing');
+            StorageService.setData(AppEngine.db)
+                .then(() => SyncUI.show('Salvo', 'ok'))
+                .catch(() => SyncUI.show('Erro ao salvar', 'error'));
         },
 
         async toggleTodasImpressoes() {
             const algumMarcado = AppEngine.db.some(i => i.imprimirItem !== false);
             AppEngine.db.forEach(item => { item.imprimirItem = !algumMarcado; });
-            SyncUI.show('Salvando...', 'syncing');
-            await StorageService.setData(AppEngine.db);
-            SyncUI.show('Salvo', 'ok');
             this.renderListas();
+            SyncUI.show('Salvando...', 'syncing');
+            StorageService.setData(AppEngine.db)
+                .then(() => SyncUI.show('Salvo', 'ok'))
+                .catch(() => SyncUI.show('Erro ao salvar', 'error'));
         },
 
         async excluirDemanda(id) {
             if (confirm("Excluir?")) {
                 AppEngine.db = AppEngine.db.filter(i => i.id !== id);
-                SyncUI.show('Excluindo...', 'syncing');
-                await StorageService.setData(AppEngine.db);
-                await StorageService.deleteLogs(id);
-                SyncUI.show('Excluído', 'ok');
                 AppEngine.itemAtivoId = null;
                 document.getElementById('painel-rolagem').innerHTML = '';
                 document.getElementById('btn-salvar-geral').classList.add('hidden');
                 this.renderListas();
+                SyncUI.show('Excluindo...', 'syncing');
+                StorageService.setData(AppEngine.db)
+                    .then(() => StorageService.deleteLogs(id))
+                    .then(() => SyncUI.show('Excluído', 'ok'))
+                    .catch(() => SyncUI.show('Erro ao excluir', 'error'));
             }
         },
 
@@ -626,9 +630,10 @@
         async remP(id, i) {
             AppEngine.db.find(x => x.id === id).passos.splice(i, 1);
             SyncUI.show('Salvando...', 'syncing');
-            await StorageService.setData(AppEngine.db);
-            SyncUI.show('Salvo', 'ok');
             await this.abrirDetalhes(id);
+            StorageService.setData(AppEngine.db)
+                .then(() => SyncUI.show('Salvo', 'ok'))
+                .catch(() => SyncUI.show('Erro ao salvar', 'error'));
         },
 
         async addP(id) {
@@ -636,9 +641,10 @@
             if (!input.innerText.trim()) return;
             AppEngine.db.find(x => x.id === id).passos.push(input.innerText);
             SyncUI.show('Salvando...', 'syncing');
-            await StorageService.setData(AppEngine.db);
-            SyncUI.show('Salvo', 'ok');
             await this.abrirDetalhes(id);
+            StorageService.setData(AppEngine.db)
+                .then(() => SyncUI.show('Salvo', 'ok'))
+                .catch(() => SyncUI.show('Erro ao salvar', 'error'));
         },
 
         async renderizarPadraoExecutivo() {
