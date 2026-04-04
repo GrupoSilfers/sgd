@@ -179,6 +179,14 @@
 
         /* ── LAYOUT PRINCIPAL ──────────────────── */
         @media (max-width: 1023px) {
+            /* painel-dash no mobile: scroll livre, altura auto */
+            #painel-dash {
+                display: block !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow-y: auto !important;
+                flex: 1 !important;
+            }
             /* O grid vira coluna única */
             #main-app {
                 display: flex !important;
@@ -238,10 +246,15 @@
                 flex-shrink: 0;
                 max-height: 45vh;
             }
+            /* container flex principal do app vira coluna scrollável */
+            #main-app > div.flex.flex-col > div.flex.flex-1 {
+                flex-direction: column;
+                overflow-y: auto;
+            }
 
             /* Painel principal */
             #painel-rolagem { padding: 16px !important; }
-            #painel-dash { padding: 0.75rem !important; }
+            #painel-dash { padding: 0 !important; overflow-y: auto !important; }
 
             /* Padding inferior para bottom nav */
             #painel-rolagem, #painel-dash {
@@ -1640,32 +1653,22 @@
 
     window.addEventListener('keydown', e => { if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); AppEngine.salvarAlteracoesPagina(); } });
 
-    // ─────────────────────────────────────────────
-    // MOBILE UI — controla drawer, bottom nav, sheets
-    // ─────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    // MOBILE UI v2 — Dashboard fluído · Lista completa · Filtros sheet
+    // ═══════════════════════════════════════════════════════════════
     const MobileUI = {
-        _activeNav: 'dash',
-
-        init() {
-            // Sincroniza busca desktop → mobile e vice-versa
-            const desktop = document.getElementById('busca-rapida');
-            const mobile  = document.getElementById('busca-rapida-mobile');
-            if (desktop && mobile) {
-                desktop.addEventListener('input', () => { mobile.value = desktop.value; });
-            }
-        },
+        _view: 'dash',   // 'dash' | 'lista' | 'detalhe'
 
         isMobile() { return window.innerWidth < 1024; },
 
-        // ── DRAWER ──────────────────────────────
+        // ── DRAWER ─────────────────────────────────────────────────
         toggleDrawer() {
             const sidebar = document.getElementById('sidebar-infra');
-            const overlay = document.getElementById('drawer-overlay');
             const isOpen  = sidebar.classList.contains('mobile-open');
-            if (isOpen) { this.closeDrawer(); }
+            if (isOpen) this.closeDrawer();
             else {
                 sidebar.classList.add('mobile-open');
-                overlay.classList.add('on');
+                document.getElementById('drawer-overlay').classList.add('on');
                 document.body.style.overflow = 'hidden';
             }
         },
@@ -1675,64 +1678,99 @@
             document.body.style.overflow = '';
         },
 
-        // ── BOTTOM NAV ──────────────────────────
-        setActiveNav(id) {
-            this._activeNav = id;
+        // ── BOTTOM NAV ─────────────────────────────────────────────
+        _setActive(id) {
+            this._view = id;
             document.querySelectorAll('.bnav-item:not(.bnav-center)').forEach(b => b.classList.remove('active'));
             const el = document.getElementById('bnav-' + id);
             if (el) el.classList.add('active');
         },
+
+        // ── VISTA DASH ─────────────────────────────────────────────
+        // O DashEngine.abrir() já cuida de esconder painel-rolagem e mostrar painel-dash.
+        // No mobile, queremos que painel-dash seja scrollável e contenha tudo linearizado.
         navDash() {
             this.closeDrawer();
             this.closeFilterSheet();
-            this.setActiveNav('dash');
-            DashEngine.abrir();
+            this._setActive('dash');
+            DashEngine.abrir();   // re-renderiza o dash (já tratado no patch abaixo)
         },
+
+        // ── VISTA LISTA ────────────────────────────────────────────
+        // Mostra sidebar-listas + painel-rolagem em coluna no mobile.
+        // A lista de demandas obedece os filtros normais (RenderEngine.renderListas).
         navLista() {
             this.closeDrawer();
             this.closeFilterSheet();
-            this.setActiveNav('list');
-            // No mobile, mostra a lista e fecha o painel de detalhe
-            if (this.isMobile()) {
-                document.getElementById('painel-dash').style.display = 'none';
-                document.getElementById('painel-rolagem').style.display = '';
-                document.getElementById('painel-rolagem').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:#94a3b8;font-size:13px;gap:8px;"><i data-lucide=\"hand-pointer\" style=\"width:32px;height:32px;opacity:.4\"></i><span>Selecione uma demanda</span></div>';
+            this._setActive('list');
+
+            if (!this.isMobile()) return;
+
+            // Esconde dash, mostra painel
+            document.getElementById('painel-dash').style.display  = 'none';
+            document.getElementById('painel-rolagem').style.display = '';
+
+            // Mostra o container flex em coluna (lista + detalhe)
+            const wrapper = document.querySelector('#main-app > div.flex.flex-col > div.flex.flex-1');
+            if (wrapper) {
+                wrapper.style.flexDirection = 'column';
+                wrapper.style.overflowY = 'auto';
+            }
+
+            // sidebar-listas visível, altura auto
+            const sl = document.getElementById('sidebar-listas');
+            if (sl) {
+                sl.style.display = 'flex';
+                sl.style.maxHeight = 'none';
+                sl.style.height = 'auto';
+                sl.style.borderRight = 'none';
+                sl.style.borderBottom = '1px solid #e2e8f0';
+            }
+
+            // Se não há item ativo, limpa o painel e coloca hint
+            if (!AppEngine.itemAtivoId) {
+                document.getElementById('painel-rolagem').innerHTML =
+                    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+                    'padding:40px 24px;color:#94a3b8;font-size:13px;gap:12px;text-align:center;">' +
+                    '<i data-lucide="hand-pointer" style="width:36px;height:36px;opacity:.35;color:#1abc9c;"></i>' +
+                    '<span style="font-weight:600;color:#64748b;">Toque em uma demanda para abrir</span>' +
+                    '</div>';
                 lucide.createIcons();
             }
+
+            // Re-renderiza listas com filtros atuais
+            RenderEngine.renderListas();
         },
 
-        // ── FILTER SHEET ────────────────────────
+        // ── FILTER SHEET ───────────────────────────────────────────
         openFilterSheet() {
-            const sheet = document.getElementById('filter-sheet');
-            const overlay = document.getElementById('filter-sheet-overlay');
-            // Sync status atual
-            const currentStatus = document.getElementById('filter-status').value;
-            document.querySelectorAll('.sheet-option').forEach(o => {
-                o.classList.toggle('selected', o.dataset.status === currentStatus);
-            });
-            // Sync busca
-            const mobileInput = document.getElementById('busca-rapida-mobile');
-            if (mobileInput) mobileInput.value = document.getElementById('busca-rapida').value;
-            // Sync ordem
-            const mobileSort = document.getElementById('sort-order-mobile');
-            if (mobileSort) mobileSort.value = document.getElementById('sort-order').value;
+            // Sync valores atuais nos controles do sheet
+            const st = document.getElementById('filter-status').value;
+            document.querySelectorAll('.sheet-option').forEach(o =>
+                o.classList.toggle('selected', o.dataset.status === st));
 
-            sheet.classList.add('open');
-            overlay.classList.add('on');
-            this.setActiveNav('filter');
+            const mInput = document.getElementById('busca-rapida-mobile');
+            if (mInput) mInput.value = document.getElementById('busca-rapida').value;
+
+            const mSort = document.getElementById('sort-order-mobile');
+            if (mSort) mSort.value = document.getElementById('sort-order').value;
+
+            document.getElementById('filter-sheet').classList.add('open');
+            document.getElementById('filter-sheet-overlay').classList.add('on');
         },
         closeFilterSheet() {
             document.getElementById('filter-sheet').classList.remove('open');
             document.getElementById('filter-sheet-overlay').classList.remove('on');
+            // Volta o ativo anterior
+            this._setActive(this._view);
         },
+
         setStatus(status, el) {
-            // Atualiza select desktop
             document.getElementById('filter-status').value = status;
-            // Marca selecionado
             document.querySelectorAll('.sheet-option').forEach(o => o.classList.remove('selected'));
             el.classList.add('selected');
             RenderEngine.renderListas();
-            setTimeout(() => this.closeFilterSheet(), 200);
+            // Não fecha — usuário fecha arrastando ou clicando fora
         },
         syncBusca(val) {
             document.getElementById('busca-rapida').value = val;
@@ -1741,56 +1779,210 @@
         syncOrdem(val) {
             document.getElementById('sort-order').value = val;
             RenderEngine.renderListas();
+        },
+
+        // ── INIT ───────────────────────────────────────────────────
+        init() {
+            // Sync busca desktop → mobile
+            const dBusca = document.getElementById('busca-rapida');
+            const mBusca = document.getElementById('busca-rapida-mobile');
+            if (dBusca && mBusca) dBusca.addEventListener('input', () => { mBusca.value = dBusca.value; });
+
+            if (!this.isMobile()) return;
+
+            // Swipe down fecha o filter sheet
+            const sheet = document.getElementById('filter-sheet');
+            let _sy = 0;
+            sheet.addEventListener('touchstart', e => { _sy = e.touches[0].clientY; }, { passive: true });
+            sheet.addEventListener('touchend',   e => {
+                if (e.changedTouches[0].clientY - _sy > 60) this.closeFilterSheet();
+            }, { passive: true });
+
+            // Fecha drawer ao clicar nos items do sidebar
+            document.querySelectorAll('#sidebar-infra .nav-item, #sidebar-infra .nav-subitem')
+                .forEach(el => el.addEventListener('click', () => setTimeout(() => this.closeDrawer(), 150)));
+
+            // Inicia na vista dash
+            this._setActive('dash');
         }
     };
 
-    // Patch Navigation.toggleSidebar para mobile usar drawer
+    // ── PATCHES ────────────────────────────────────────────────────
+
+    // toggleSidebar → drawer no mobile
     const _origToggleSidebar = Navigation.toggleSidebar.bind(Navigation);
     Navigation.toggleSidebar = function() {
-        if (MobileUI.isMobile()) { MobileUI.toggleDrawer(); }
-        else { _origToggleSidebar(); }
+        if (MobileUI.isMobile()) MobileUI.toggleDrawer();
+        else _origToggleSidebar();
     };
 
-    // Patch abrirDetalhes para fechar drawer no mobile e ativar nav
+    // abrirDetalhes → fecha drawer, marca lista como ativa
     const _origAbrirDetalhes = RenderEngine.abrirDetalhes.bind(RenderEngine);
     RenderEngine.abrirDetalhes = async function(id) {
         if (MobileUI.isMobile()) {
             MobileUI.closeDrawer();
-            MobileUI.setActiveNav('list');
+            MobileUI.closeFilterSheet();
+            MobileUI._view = 'list';
+            MobileUI._setActive('list');
+            // Garante que o wrapper está em coluna e sidebar-listas visível
+            const sl = document.getElementById('sidebar-listas');
+            if (sl) { sl.style.display = 'flex'; sl.style.maxHeight = 'none'; sl.style.height = 'auto'; sl.style.borderRight = 'none'; sl.style.borderBottom = '1px solid #e2e8f0'; }
+            const wrapper = document.querySelector('#main-app > div.flex.flex-col > div.flex.flex-1');
+            if (wrapper) { wrapper.style.flexDirection = 'column'; wrapper.style.overflowY = 'auto'; }
         }
         await _origAbrirDetalhes(id);
     };
 
-    // Patch DashEngine.abrir para ativar nav
+    // DashEngine.abrir → no mobile, renderiza dash linearizado em scroll
     const _origDashAbrir = DashEngine.abrir.bind(DashEngine);
     DashEngine.abrir = function() {
         _origDashAbrir();
-        if (MobileUI.isMobile()) MobileUI.setActiveNav('dash');
+        if (!MobileUI.isMobile()) return;
+        MobileUI._setActive('dash');
+
+        // No mobile: painel-dash scrollável, sem height:100% fixo
+        const pd = document.getElementById('painel-dash');
+        pd.style.display = 'block';
+        pd.style.flex    = '';
+        pd.style.height  = 'auto';
+        pd.style.overflowY = 'auto';
+
+        // sidebar-listas fora da vista dash
+        const sl = document.getElementById('sidebar-listas');
+        if (sl) sl.style.display = 'none';
+
+        // wrapper: coluna
+        const wrapper = document.querySelector('#main-app > div.flex.flex-col > div.flex.flex-1');
+        if (wrapper) { wrapper.style.flexDirection = 'column'; wrapper.style.overflowY = 'auto'; }
+
+        // Re-renderiza com layout mobile
+        DashEngine.renderMobile(pd);
     };
 
-    // Fecha drawer ao clicar em item do sidebar (mobile)
-    document.querySelectorAll('#sidebar-infra .nav-item, #sidebar-infra .nav-subitem').forEach(el => {
-        el.addEventListener('click', () => {
-            if (MobileUI.isMobile()) setTimeout(() => MobileUI.closeDrawer(), 120);
-        });
-    });
+    // DashEngine.renderMobile — dash linearizado para scroll
+    DashEngine.renderMobile = function(painel) {
+        const db = AppEngine.db;
+        const STATUS_ORDER = ['urgente','pendente','andamento','aguardando','concluido'];
+        const STATUS_LABEL = { urgente:'Urgente', pendente:'Pendente', andamento:'Em Andamento', aguardando:'Aguardando', concluido:'Concluído' };
+        const STATUS_COLOR = { urgente:'#ef4444', pendente:'#facc15', andamento:'#3b82f6', aguardando:'#94a3b8', concluido:'#10b981' };
+        const total = db.length;
+        const cont  = {};
+        STATUS_ORDER.forEach(s => cont[s] = db.filter(i => i.status === s).length);
 
-    // Fecha filter sheet com swipe down (simples via touchstart/touchend)
-    (function() {
-        const sheet = document.getElementById('filter-sheet');
-        let startY = 0;
-        sheet.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
-        sheet.addEventListener('touchend', e => {
-            if (e.changedTouches[0].clientY - startY > 60) MobileUI.closeFilterSheet();
-        }, { passive: true });
-    })();
+        // Subtítulo / período
+        const subtitulo = AppEngine.config.subtitulo || '';
+        const semana    = AppEngine.config.semana    || '';
+        const periodo   = AppEngine.config.periodo   || '';
+
+        // KPIs
+        const kpis = [
+            { label:'Total',        valor: total,                                         cor:'#1abc9c', borda:'#1abc9c' },
+            { label:'Em Andamento', valor: cont.andamento + cont.pendente + cont.urgente, cor:'#3b82f6', borda:'#3b82f6' },
+            { label:'Aguardando',   valor: cont.aguardando,                               cor:'#94a3b8', borda:'#94a3b8' },
+            { label:'Concluídas',   valor: cont.concluido,                                cor:'#10b981', borda:'#10b981' },
+        ];
+
+        // Donut SVG
+        const Rv=110, CXv=130, CYv=130, Cv=2*Math.PI*Rv;
+        let arcs='', ov=0;
+        STATUS_ORDER.forEach(s => {
+            if (!cont[s]) return;
+            const d = (cont[s]/(total||1))*Cv;
+            const corFatia = s === 'aguardando' ? '#e2e8f0' : STATUS_COLOR[s];
+            arcs += `<circle cx="${CXv}" cy="${CYv}" r="${Rv}" fill="none" stroke="${corFatia}" stroke-width="28" stroke-dasharray="${d} ${Cv-d}" stroke-dashoffset="${-ov}" onclick="DashEngine.filtrarEAbrir('${s}')"/>`;
+            ov += d;
+        });
+
+        const urgentes    = db.filter(i => i.status === 'urgente');
+        const prioritarias = STATUS_ORDER.filter(s => s !== 'urgente').flatMap(s => db.filter(i => i.status === s));
+
+        const rowItem = (i) =>
+            `<div onclick="DashEngine.fechar();MobileUI.navLista();setTimeout(()=>RenderEngine.abrirDetalhes('${i.id}'),50)"
+                  style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+                <span style="width:9px;height:9px;border-radius:50%;background:${STATUS_COLOR[i.status]};flex-shrink:0;"></span>
+                <span style="font-size:12px;color:#1e293b;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i.nome}</span>
+                <span style="font-size:10px;color:${STATUS_COLOR[i.status]};font-weight:700;flex-shrink:0;">${STATUS_LABEL[i.status]}</span>
+            </div>`;
+
+        painel.innerHTML =
+            // ── cabeçalho
+            `<div style="padding:16px 16px 8px;">
+                <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#64748b;">ANALYTICS DE PERFORMANCE</div>
+                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">${subtitulo} ${semana ? '· '+semana : ''} ${periodo ? '· '+periodo : ''}</div>
+            </div>` +
+
+            // ── KPIs 2×2
+            `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px;">
+                ${kpis.map(k =>
+                    `<div style="background:white;border-radius:10px;border:1px solid #e2e8f0;border-top:3px solid ${k.borda};padding:12px 14px;">
+                        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;">${k.label}</div>
+                        <div style="font-size:2rem;font-weight:300;color:${k.cor};line-height:1.1;margin-top:4px;">${k.valor}</div>
+                    </div>`
+                ).join('')}
+            </div>` +
+
+            // ── Donut
+            `<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;margin:0 16px 16px;padding:16px 12px 12px;">
+                <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:12px;">Distribuição de Status</div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <svg viewBox="0 0 260 260" style="width:130px;height:130px;flex-shrink:0;transform:rotate(-90deg);">${arcs}
+                        <text x="${CXv}" y="${CYv+2}" text-anchor="middle" dominant-baseline="middle" font-size="36" font-weight="300" fill="#334155" transform="rotate(90,${CXv},${CYv})">${total}</text>
+                    </svg>
+                    <div style="display:flex;flex-direction:column;gap:7px;flex:1;">
+                        ${STATUS_ORDER.filter(s=>cont[s]).map(s =>
+                            `<div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#64748b;cursor:pointer;" onclick="DashEngine.filtrarEAbrir('${s}');MobileUI._setActive('list');">
+                                <span style="width:9px;height:9px;border-radius:50%;background:${s==='aguardando'?'#e2e8f0':STATUS_COLOR[s]};${s==='aguardando'?'border:1px solid #cbd5e1;':''}flex-shrink:0;"></span>
+                                <span style="font-weight:700;font-size:9px;text-transform:uppercase;">${STATUS_LABEL[s]}</span>
+                                <span style="margin-left:auto;font-weight:700;color:#1e293b;">${cont[s]}</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                </div>
+            </div>` +
+
+            // ── Próximas Ações
+            `<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;margin:0 16px 16px;overflow:hidden;">
+                <div style="padding:12px 16px 8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;">
+                    🔴 Próximas Ações Recomendadas (${urgentes.length})
+                </div>
+                ${urgentes.length ? urgentes.map(rowItem).join('') : '<p style="font-size:12px;color:#94a3b8;padding:14px 16px;">Nenhuma demanda urgente.</p>'}
+            </div>` +
+
+            // ── Demandas Prioritárias
+            `<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;margin:0 16px 16px;overflow:hidden;">
+                <div style="padding:12px 16px 8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;">
+                    📋 Demandas Prioritárias (${prioritarias.length})
+                </div>
+                ${prioritarias.length ? prioritarias.map(rowItem).join('') : '<p style="font-size:12px;color:#94a3b8;padding:14px 16px;">Nenhuma demanda.</p>'}
+            </div>` +
+
+            // ── Botão voltar ao topo
+            `<div style="display:flex;justify-content:center;padding:8px 16px calc(var(--bottom-nav-h) + var(--safe-bottom, 0px) + 24px);">
+                <button onclick="document.getElementById('painel-dash').scrollTop=0"
+                    style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;">
+                    <i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo
+                </button>
+            </div>`;
+
+        lucide.createIcons();
+    };
+
+    // filtrarEAbrir no mobile: abre lista e filtra
+    const _origFiltrarEAbrir = DashEngine.filtrarEAbrir.bind(DashEngine);
+    DashEngine.filtrarEAbrir = function(status) {
+        if (MobileUI.isMobile()) {
+            document.getElementById('filter-status').value = status;
+            MobileUI.navLista();
+        } else {
+            _origFiltrarEAbrir(status);
+        }
+    };
 
     // Inicializa MobileUI após app carregar
     const _origAppInit = AppEngine.init.bind(AppEngine);
     AppEngine.init = async function() {
         await _origAppInit();
         MobileUI.init();
-        if (MobileUI.isMobile()) MobileUI.setActiveNav('dash');
     };
     </script>
 </body>
