@@ -211,7 +211,7 @@
     <div id="cad-err" class="auth-err"></div>
     <div id="cad-ok" class="auth-ok"></div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; max-width: 540px; margin: 0 auto;">
         
         <div class="auth-field">
             <label class="auth-label">Nome Completo</label>
@@ -238,6 +238,14 @@
         </div>
 
         <div class="auth-field">
+            <label class="auth-label">Confirmar Senha</label>
+            <div class="auth-input-wrap">
+                <div class="auth-icon"><span class="material-icons" style="font-size:20px;">check_circle_outline</span></div>
+                <input type="password" id="cad-confirma" placeholder="Repita a senha">
+            </div>
+        </div>
+
+        <div class="auth-field">
             <label class="auth-label">Área / Lotação</label>
             <div class="auth-input-wrap">
                 <div class="auth-icon"><span class="material-icons" style="font-size:20px;">business</span></div>
@@ -254,22 +262,14 @@
             </div>
         </div>
 
-        <div class="auth-field">
-            <label class="auth-label">Confirmar Senha</label>
-            <div class="auth-input-wrap">
-                <div class="auth-icon"><span class="material-icons" style="font-size:20px;">check_circle_outline</span></div>
-                <input type="password" id="cad-confirma" placeholder="Repita a senha">
-            </div>
-        </div>
-
         <div class="auth-field" style="display: flex; align-items: flex-end;">
-            <button class="auth-btn" id="btn-cadastrar" onclick="AuthLayer.cadastrar()" style="margin-top: 0; height: 46px;">
+            <button class="auth-btn" id="btn-cadastrar" onclick="AuthLayer.cadastrar()" style="margin-top: 0; height: 46px; width: 100%;">
                 Criar Conta
             </button>
         </div>
     </div>
 
-    <div class="auth-links">
+    <div class="auth-links" style="margin-top: 30px;">
         Já possui conta? <span class="auth-link" onclick="AuthLayer.irLogin()">Fazer Login</span>
     </div>
 </div>
