@@ -1557,18 +1557,6 @@
         }
     };
 
-    // ─────────────────────────────────────────────
-    // INICIALIZAÇÃO — aguarda o Firebase estar pronto
-    // ─────────────────────────────────────────────
-    function startApp() {
-        StorageService.init(window._firestore, window._firestoreLib);
-        AppEngine.init().catch(err => {
-            console.error(err);
-            document.querySelector('#loading-screen p').textContent = 'Erro ao conectar. Verifique as regras do Firestore.';
-            SyncUI.show('Erro de conexão', 'error');
-        });
-    }
-
     // ── AUTH LAYER ────────────────────────────────────────────────
     const AuthLayer = {
         _msgs: {
@@ -1613,7 +1601,9 @@
             try {
                 const { signInWithEmailAndPassword } = window._authLib;
                 await signInWithEmailAndPassword(window._auth, email, senha);
-                // onAuthStateChanged cuida do restante
+                // Chama diretamente — não depende só do onAuthStateChanged no mobile
+                document.getElementById('auth-overlay').classList.add('hidden');
+                startApp();
             } catch(err){
                 errEl.textContent = this._msg(err);
                 errEl.classList.add('on');
@@ -1641,7 +1631,11 @@
                 await setDoc(doc(window._firestore, 'usuarios', cred.user.uid), { nome, email, area, uid: cred.user.uid, criadoEm: new Date().toISOString() });
                 okEl.textContent = 'Conta criada! Entrando...';
                 okEl.classList.add('on');
-                // onAuthStateChanged vai disparar o startApp automaticamente
+                // Chama diretamente — não depende só do onAuthStateChanged no mobile
+                setTimeout(() => {
+                    document.getElementById('auth-overlay').classList.add('hidden');
+                    startApp();
+                }, 800);
             } catch(err){
                 errEl.textContent = this._msg(err);
                 errEl.classList.add('on');
@@ -1661,15 +1655,25 @@
     window._authLayerSair = () => AuthLayer.sair();
 
     // ── INICIALIZAÇÃO COM AUTH ────────────────────────────────────
+    let _appStarted = false;
+    function startApp() {
+        if (_appStarted) return;
+        _appStarted = true;
+        StorageService.init(window._firestore, window._firestoreLib);
+        AppEngine.init().catch(err => {
+            console.error(err);
+            document.querySelector('#loading-screen p').textContent = 'Erro ao conectar. Verifique as regras do Firestore.';
+            SyncUI.show('Erro de conexão', 'error');
+        });
+    }
+
     function bootWithAuth() {
         const { onAuthStateChanged } = window._authLib;
         onAuthStateChanged(window._auth, (user) => {
             if (user) {
-                // Usuário autenticado: esconde overlay e inicia app
                 document.getElementById('auth-overlay').classList.add('hidden');
                 startApp();
             } else {
-                // Não autenticado: mostra overlay, esconde loading
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('auth-overlay').classList.remove('hidden');
             }
