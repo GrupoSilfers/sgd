@@ -27,15 +27,18 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Sessão expira ao fechar o app — sem login automático
-        await setPersistence(auth, browserSessionPersistence);
+        // CORREÇÃO: Removido o 'await' que travava o carregamento
+        setPersistence(auth, browserSessionPersistence)
+            .then(() => console.log("Persistência OK"))
+            .catch(err => console.error("Erro persistência:", err));
 
-        // Expõe o Firestore globalmente para uso no restante do script
+        // Expõe as bibliotecas e objetos globalmente de forma imediata
         window._firestore = db;
         window._firestoreLib = { doc, getDoc, setDoc, collection, getDocs, deleteDoc };
-        // Expõe Auth globalmente
         window._auth = auth;
         window._authLib = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+        
+        // Dispara o evento que "acorda" o botão de login
         window._firebaseReady = true;
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
