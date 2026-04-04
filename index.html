@@ -12,6 +12,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCBo8BUsjqM0lrKlRCSxOcIBWsBB0J7REs",
@@ -24,10 +25,14 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         // Expõe o Firestore globalmente para uso no restante do script
         window._firestore = db;
         window._firestoreLib = { doc, getDoc, setDoc, collection, getDocs, deleteDoc };
+        // Expõe Auth globalmente
+        window._auth = auth;
+        window._authLib = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
         window._firebaseReady = true;
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
@@ -96,9 +101,168 @@
         .dash-item-row { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; transition:background .15s; font-size:12px; }
         .dash-item-row:hover { background:#f8fafc; }
         .dash-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+        /* ── AUTH OVERLAY ─────────────────────────── */
+        #auth-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            display: flex; font-family: 'Montserrat', sans-serif;
+        }
+        #auth-overlay.hidden { display: none; }
+        .auth-panel-img {
+            flex: 5;
+            background-image: url('sgd_tlog1.JPG');
+            background-color: #1e293b;
+            background-size: cover; background-position: center;
+        }
+        .auth-panel-form {
+            flex: 6; background: #fff;
+            display: flex; align-items: center; justify-content: center; overflow-y: auto;
+        }
+        .auth-box { width: 360px; padding: 40px 20px; }
+        .auth-logo { text-align:center; margin-bottom:32px; }
+        .auth-logo img { width:100%; max-width:240px; height:auto; object-fit:contain; }
+        .auth-page-title { text-align:center; font-size:18px; font-weight:600; color:#1e293b; margin-bottom:6px; }
+        .auth-page-sub { text-align:center; font-size:13px; color:#64748b; margin-bottom:24px; }
+        .auth-field { margin-bottom:16px; }
+        .auth-label { display:block; font-size:12px; font-weight:600; color:#334155; margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
+        .auth-input-wrap {
+            display:flex; height:46px; border:1.5px solid #cbd5e1; border-radius:6px;
+            overflow:hidden; background:#fff; transition:border-color .3s, box-shadow .3s;
+        }
+        .auth-input-wrap:focus-within { border-color:#14b8a6; box-shadow:0 0 0 3px rgba(20,184,166,.15); }
+        .auth-icon { width:46px; background:#f8fafc; border-right:1.5px solid #cbd5e1;
+            display:flex; align-items:center; justify-content:center; color:#94a3b8; }
+        .auth-input-wrap input, .auth-input-wrap select {
+            flex:1; border:none; outline:none; padding:0 14px; font-size:14px;
+            font-family:'Montserrat',sans-serif; color:#1e293b; background:transparent;
+        }
+        .auth-input-wrap select { cursor:pointer; appearance:none; }
+        .auth-sel-wrap { position:relative; flex:1; display:flex; }
+        .auth-sel-arrow { position:absolute; right:12px; top:50%; transform:translateY(-50%);
+            pointer-events:none; color:#94a3b8; font-size:20px; }
+        .auth-btn {
+            width:100%; height:48px; background:#1e3a8a; color:#fff; border:none;
+            border-radius:24px; font-size:15px; font-weight:600;
+            font-family:'Montserrat',sans-serif; cursor:pointer; margin-top:16px;
+            transition:background .2s, transform .1s;
+        }
+        .auth-btn:hover { background:#172554; transform:translateY(-1px); }
+        .auth-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+        .auth-links { margin-top:24px; text-align:center; font-size:13px; color:#64748b; }
+        .auth-link { color:#14b8a6; font-weight:700; cursor:pointer; }
+        .auth-link:hover { text-decoration:underline; }
+        .auth-link2 { color:#0ea5e9; font-weight:500; cursor:pointer; display:block; margin-top:10px; }
+        .auth-link2:hover { text-decoration:underline; }
+        .auth-err { background:#fef2f2; border:1px solid #fecaca; color:#dc2626;
+            padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:12px; display:none; }
+        .auth-err.on { display:block; }
+        .auth-ok { background:#f0fdf4; border:1px solid #bbf7d0; color:#16a34a;
+            padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:12px; display:none; }
+        .auth-ok.on { display:block; }
+        .auth-spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,.3);
+            border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; display:inline-block; vertical-align:middle; }
+        #auth-cad { display:none; }
+        #auth-cad.on { display:block; }
+        #auth-login.off { display:none; }
+        @media (max-width:900px) { .auth-panel-img { display:none; } .auth-panel-form { flex:1; } }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body class="text-slate-900 font-sans">
+
+    <!-- ═══ AUTH OVERLAY ═══ -->
+    <div id="auth-overlay">
+        <div class="auth-panel-img"></div>
+        <div class="auth-panel-form">
+            <div class="auth-box">
+                <div class="auth-logo"><img src="sgd_tlog2.png" alt="SGD"></div>
+
+                <!-- LOGIN -->
+                <div id="auth-login">
+                    <div class="auth-page-title">Bem-vindo de volta</div>
+                    <div class="auth-page-sub">Acesse o sistema com suas credenciais</div>
+                    <div id="login-err" class="auth-err"></div>
+                    <div class="auth-field">
+                        <label class="auth-label">E-mail Institucional</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">mail_outline</span></div>
+                            <input type="email" id="login-email" placeholder="nome@infrasa.gov.br" autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">Senha</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">lock_outline</span></div>
+                            <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password">
+                        </div>
+                    </div>
+                    <button class="auth-btn" id="btn-login" onclick="AuthLayer.login()">Acessar Sistema</button>
+                    <div class="auth-links">
+                        Não possui conta? <span class="auth-link" onclick="AuthLayer.irCadastro()">Cadastrar novo usuário</span>
+                        <span class="auth-link2">Autenticação em dois fatores</span>
+                    </div>
+                </div>
+
+                <!-- CADASTRO -->
+                <div id="auth-cad">
+                    <div class="auth-page-title">Crie sua conta</div>
+                    <div class="auth-page-sub">Preencha os dados para criar seu acesso</div>
+                    <div id="cad-err" class="auth-err"></div>
+                    <div id="cad-ok" class="auth-ok"></div>
+                    <div class="auth-field">
+                        <label class="auth-label">Nome Completo</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">badge</span></div>
+                            <input type="text" id="cad-nome" placeholder="Ex: João Silva">
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">E-mail Institucional</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">mail_outline</span></div>
+                            <input type="email" id="cad-email" placeholder="nome@infrasa.gov.br">
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">Área / Lotação</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">business</span></div>
+                            <div class="auth-sel-wrap">
+                                <select id="cad-area">
+                                    <option value="" disabled selected>Selecione sua área</option>
+                                    <option value="SUINM">SUINM</option>
+                                    <option value="GEPEM">GEPEM</option>
+                                    <option value="GEMAR">GEMAR</option>
+                                    <option value="GEIN">GEIN</option>
+                                </select>
+                                <span class="material-icons auth-sel-arrow">expand_more</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">Senha</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">lock_outline</span></div>
+                            <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres">
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">Confirmar Senha</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">check_circle_outline</span></div>
+                            <input type="password" id="cad-confirma" placeholder="Repita a senha">
+                        </div>
+                    </div>
+                    <button class="auth-btn" id="btn-cadastrar" onclick="AuthLayer.cadastrar()">Criar Conta</button>
+                    <div class="auth-links">
+                        Já possui conta? <span class="auth-link" onclick="AuthLayer.irLogin()">Fazer Login</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ═══ FIM AUTH OVERLAY ═══ -->
 
     <!-- Tela de carregamento -->
     <div id="loading-screen">
@@ -518,7 +682,7 @@
 
             const kpis = [
                 { label:'Total de Demandas', valor:total,           cor:'#1abc9c', borda:'#1abc9c', status:null },
-                { label:'Em Tratamento',     valor:(cont.andamento + cont.pendente + cont.urgente),  cor:'#3b82f6', borda:'#3b82f6', status:null },
+                { label:'Em Andamento',      valor:cont.andamento,  cor:'#3b82f6', borda:'#3b82f6', status:'andamento' },
                 { label:'Aguardando',        valor:cont.aguardando, cor:'#94a3b8', borda:'#94a3b8', status:'aguardando' },
                 { label:'Concluídas',        valor:cont.concluido,  cor:'#10b981', borda:'#10b981', status:'concluido' },
             ];
@@ -566,7 +730,7 @@
                         <p class="dash-kpi-label" style="margin-bottom:.8rem;">Distribuição de Status</p>
                         <div style="position:relative;width:100%;padding-bottom:72%;">
                             <svg viewBox="0 0 300 300" style="position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);">
-                                ${(()=>{ const Rv=132,CXv=150,CYv=150,Cv=2*Math.PI*Rv; let a='',ov=0; STATUS_ORDER.forEach(s=>{ if(!cont[s])return; const d=(cont[s]/(total||1))*Cv; const corFatia = s === 'aguardando' ? '#e2e8f0' : STATUS_COLOR[s]; a+=`<circle cx="${CXv}" cy="${CYv}" r="${Rv}" fill="none" stroke="${corFatia}" stroke-width="34" stroke-dasharray="${d} ${Cv-d}" stroke-dashoffset="${-ov}"/>`; ov+=d; }); return a; })()}
+                                ${(()=>{ const Rv=132,CXv=150,CYv=150,Cv=2*Math.PI*Rv; let a='',ov=0; STATUS_ORDER.forEach(s=>{ if(!cont[s])return; const d=(cont[s]/(total||1))*Cv; a+=`<circle cx="${CXv}" cy="${CYv}" r="${Rv}" fill="none" stroke="${STATUS_COLOR[s]}" stroke-width="34" stroke-dasharray="${d} ${Cv-d}" stroke-dashoffset="${-ov}"/>`; ov+=d; }); return a; })()}
                             </svg>
                             <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:300;color:#334155;">${total}</div>
                         </div>
@@ -628,18 +792,16 @@
         },
         fecharModais() { document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); },
         async confirmarSaida() {
+            return AuthLayer.sair();
+        },
+        async _confirmarSaidaOriginal() {
             if (!confirm('Deseja sair do sistema?\nTodas as alterações serão salvas.')) return;
             SyncUI.show('Salvando...', 'syncing');
             try {
                 if (AppEngine.itemAtivoId) await new Promise(r => { AppEngine.salvarAlteracoesPagina(); setTimeout(r, 600); });
                 await StorageService.setData(AppEngine.db);
                 SyncUI.show('Salvo. Saindo...', 'ok');
-                setTimeout(() => {
-                    // Tenta fechar a aba (funciona se for um app instalado/PWA ou popup)
-                    window.close();
-                    // Se o navegador bloquear o fechamento, joga o usuário para fora (tela de login)
-                    window.location.href = "login_final.html"; 
-                }, 800);
+                setTimeout(() => window.close() || (document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#64748b;font-size:14px;">Sessão encerrada. Pode fechar esta aba.</div>'), 800);
             } catch(e) { SyncUI.show('Erro ao salvar', 'error'); }
         },
         voltarParaApp() {
@@ -979,10 +1141,121 @@
         });
     }
 
+    // ── AUTH LAYER ────────────────────────────────────────────────
+    const AuthLayer = {
+        _msgs: {
+            'auth/user-not-found':'Usuário não encontrado.',
+            'auth/wrong-password':'Senha incorreta.',
+            'auth/invalid-email':'E-mail inválido.',
+            'auth/email-already-in-use':'Este e-mail já está em uso.',
+            'auth/weak-password':'Senha fraca. Mínimo 6 caracteres.',
+            'auth/too-many-requests':'Muitas tentativas. Tente mais tarde.',
+            'auth/invalid-credential':'Credenciais inválidas.',
+            'auth/network-request-failed':'Falha de conexão.',
+        },
+        _msg(err){ return this._msgs[err.code] || ('Erro: ' + err.message); },
+        _setBtn(id, loading, label){
+            const b = document.getElementById(id);
+            b.disabled = loading;
+            b.innerHTML = loading ? '<span class="auth-spinner"></span>' : label;
+        },
+        irCadastro(){
+            document.getElementById('auth-login').classList.add('off');
+            document.getElementById('auth-cad').classList.add('on');
+            this._clearMsgs();
+        },
+        irLogin(){
+            document.getElementById('auth-cad').classList.remove('on');
+            document.getElementById('auth-login').classList.remove('off');
+            this._clearMsgs();
+        },
+        _clearMsgs(){
+            ['login-err','cad-err','cad-ok'].forEach(id=>{
+                const el=document.getElementById(id);
+                if(el){el.classList.remove('on');el.textContent='';}
+            });
+        },
+        async login(){
+            const email = document.getElementById('login-email').value.trim();
+            const senha = document.getElementById('login-senha').value;
+            const errEl = document.getElementById('login-err');
+            if(!email||!senha){ errEl.textContent='Preencha e-mail e senha.'; errEl.classList.add('on'); return; }
+            errEl.classList.remove('on');
+            this._setBtn('btn-login', true);
+            try {
+                const { signInWithEmailAndPassword } = window._authLib;
+                await signInWithEmailAndPassword(window._auth, email, senha);
+                // onAuthStateChanged cuida do restante
+            } catch(err){
+                errEl.textContent = this._msg(err);
+                errEl.classList.add('on');
+                this._setBtn('btn-login', false, 'Acessar Sistema');
+            }
+        },
+        async cadastrar(){
+            const nome    = document.getElementById('cad-nome').value.trim();
+            const email   = document.getElementById('cad-email').value.trim();
+            const area    = document.getElementById('cad-area').value;
+            const senha   = document.getElementById('cad-senha').value;
+            const confirma= document.getElementById('cad-confirma').value;
+            const errEl   = document.getElementById('cad-err');
+            const okEl    = document.getElementById('cad-ok');
+            errEl.classList.remove('on'); okEl.classList.remove('on');
+            if(!nome||!email||!area||!senha){ errEl.textContent='Preencha todos os campos.'; errEl.classList.add('on'); return; }
+            if(senha!==confirma){ errEl.textContent='As senhas não coincidem.'; errEl.classList.add('on'); return; }
+            if(senha.length<6){ errEl.textContent='Senha deve ter no mínimo 6 caracteres.'; errEl.classList.add('on'); return; }
+            this._setBtn('btn-cadastrar', true);
+            try {
+                const { createUserWithEmailAndPassword } = window._authLib;
+                const cred = await createUserWithEmailAndPassword(window._auth, email, senha);
+                // Salva perfil no Firestore
+                const { doc, setDoc } = window._firestoreLib;
+                await setDoc(doc(window._firestore, 'usuarios', cred.user.uid), { nome, email, area, uid: cred.user.uid, criadoEm: new Date().toISOString() });
+                okEl.textContent = 'Conta criada! Entrando...';
+                okEl.classList.add('on');
+                // onAuthStateChanged vai disparar o startApp automaticamente
+            } catch(err){
+                errEl.textContent = this._msg(err);
+                errEl.classList.add('on');
+                this._setBtn('btn-cadastrar', false, 'Criar Conta');
+            }
+        },
+        async sair(){
+            if(!confirm('Deseja realmente sair?')) return;
+            const { signOut } = window._authLib;
+            await signOut(window._auth);
+            location.reload();
+        }
+    };
+
+    // Intercepta o Navigation.confirmarSaida para usar AuthLayer.sair
+    // (será sobreescrito depois que o app carregar)
+    window._authLayerSair = () => AuthLayer.sair();
+
+    // ── INICIALIZAÇÃO COM AUTH ────────────────────────────────────
+    function bootWithAuth() {
+        const { onAuthStateChanged } = window._authLib;
+        onAuthStateChanged(window._auth, (user) => {
+            if (user) {
+                // Usuário autenticado: esconde overlay e inicia app
+                document.getElementById('auth-overlay').classList.add('hidden');
+                startApp();
+            } else {
+                // Não autenticado: mostra overlay, esconde loading
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('auth-overlay').classList.remove('hidden');
+            }
+        });
+    }
+
+    // Enter nos campos de senha faz submit
+    document.getElementById('login-senha').addEventListener('keydown', e => { if(e.key==='Enter') AuthLayer.login(); });
+    document.getElementById('cad-confirma').addEventListener('keydown', e => { if(e.key==='Enter') AuthLayer.cadastrar(); });
+
     if (window._firebaseReady) {
-        startApp();
+        bootWithAuth();
     } else {
-        window.addEventListener('firebase-ready', startApp);
+        window.addEventListener('firebase-ready', bootWithAuth);
     }
 
     document.getElementById('btn-pdf-trigger').onclick = () => {
