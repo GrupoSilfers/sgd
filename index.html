@@ -265,23 +265,20 @@
     <!-- ═══ FIM AUTH OVERLAY ═══ -->
 
     <!-- Tela de carregamento -->
-    <div id="loading-screen">
-        <div class="spinner"></div>
-        <p>Conectando ao banco de dados...</p>
+    <div style="display: flex; align-items: flex-end; gap: 10px; margin-bottom: 20px;">
+    <div class="auth-field" style="flex: 1; margin-bottom: 0;">
+        <label class="auth-label">Confirmar Senha</label>
+        <div class="auth-input-wrap">
+            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">check_circle_outline</span></div>
+            <input type="password" id="cad-confirma-senha" placeholder="Repita a senha">
+        </div>
     </div>
 
-    <!-- Badge de sync -->
-    <div id="sync-status" class="no-print">
-        <div id="sync-dot"></div>
-        <span id="sync-msg">Sincronizado</span>
-    </div>
-
-    <div id="report-toolbar" class="no-print">
-        <button onclick="RenderEngine.copiarTexto()" class="icon-btn" title="Copiar Conteúdo"><i data-lucide="copy"></i></button>
-        <button id="btn-pdf-trigger" class="icon-btn text-emerald-600" title="Gerar PDF"><i data-lucide="file-text"></i></button>
-        <div class="w-px h-6 bg-slate-200 mx-1"></div>
-        <button onclick="Navigation.voltarParaApp()" class="icon-btn text-red-500" title="Fechar"><i data-lucide="x"></i></button>
-    </div>
+    <button class="auth-btn" id="btn-cadastrar" style="margin-top: 0; height: 46px; width: auto; padding: 0 20px; white-space: nowrap;">
+        Criar Conta
+    </button>
+</div>
+   
 
     <div id="main-app">
         <aside id="sidebar-infra" class="no-print">
