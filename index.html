@@ -1382,7 +1382,7 @@
                 SyncUI.show('Salvo', 'ok');
                 await this.updateLogUI(id);
             }
-        },
+        ,
 
         async editP(id, i, text) {
             AppEngine.db.find(x => x.id === id).passos[i] = text;
