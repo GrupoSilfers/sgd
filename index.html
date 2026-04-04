@@ -27,18 +27,15 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // CORREÇÃO: Removido o 'await' que travava o carregamento
-        setPersistence(auth, browserSessionPersistence)
-            .then(() => console.log("Persistência OK"))
-            .catch(err => console.error("Erro persistência:", err));
+        // Sessão expira ao fechar o app — sem login automático
+        await setPersistence(auth, browserSessionPersistence);
 
-        // Expõe as bibliotecas e objetos globalmente de forma imediata
+        // Expõe o Firestore globalmente para uso no restante do script
         window._firestore = db;
         window._firestoreLib = { doc, getDoc, setDoc, collection, getDocs, deleteDoc };
+        // Expõe Auth globalmente
         window._auth = auth;
         window._authLib = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
-        
-        // Dispara o evento que "acorda" o botão de login
         window._firebaseReady = true;
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
@@ -516,7 +513,7 @@
 
                 <!-- LOGIN -->
                 <div id="auth-login">
-                    <div class="auth-page-title">Olá, bem-vindo(a)!!</div>
+                    <div class="auth-page-title">Olá, bem-vindo !!!!</div>
                     <div class="auth-page-sub">Acesse o sistema com suas credenciais</div>
                     <div id="login-err" class="auth-err"></div>
                     <div class="auth-field">
@@ -1382,7 +1379,7 @@
                 SyncUI.show('Salvo', 'ok');
                 await this.updateLogUI(id);
             }
-        ,
+        },
 
         async editP(id, i, text) {
             AppEngine.db.find(x => x.id === id).passos[i] = text;
