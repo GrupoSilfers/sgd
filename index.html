@@ -682,7 +682,7 @@
 
             const kpis = [
                 { label:'Total de Demandas', valor:total,           cor:'#1abc9c', borda:'#1abc9c', status:null },
-                { label:'Em Andamento',      valor:cont.andamento,  cor:'#3b82f6', borda:'#3b82f6', status:'andamento' },
+                { label:'Em Andamento',      valor:(cont.andamento + cont.pendente + cont.urgente),  cor:'#3b82f6', borda:'#3b82f6', status:null },
                 { label:'Aguardando',        valor:cont.aguardando, cor:'#94a3b8', borda:'#94a3b8', status:'aguardando' },
                 { label:'Concluídas',        valor:cont.concluido,  cor:'#10b981', borda:'#10b981', status:'concluido' },
             ];
@@ -730,7 +730,7 @@
                         <p class="dash-kpi-label" style="margin-bottom:.8rem;">Distribuição de Status</p>
                         <div style="position:relative;width:100%;padding-bottom:72%;">
                             <svg viewBox="0 0 300 300" style="position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);">
-                                ${(()=>{ const Rv=132,CXv=150,CYv=150,Cv=2*Math.PI*Rv; let a='',ov=0; STATUS_ORDER.forEach(s=>{ if(!cont[s])return; const d=(cont[s]/(total||1))*Cv; a+=`<circle cx="${CXv}" cy="${CYv}" r="${Rv}" fill="none" stroke="${STATUS_COLOR[s]}" stroke-width="34" stroke-dasharray="${d} ${Cv-d}" stroke-dashoffset="${-ov}"/>`; ov+=d; }); return a; })()}
+                             ${(()=>{ const Rv=132,CXv=150,CYv=150,Cv=2*Math.PI*Rv; let a='',ov=0; STATUS_ORDER.forEach(s=>{ if(!cont[s])return; const d=(cont[s]/(total||1))*Cv; const corFatia = s === 'aguardando' ? '#e2e8f0' : STATUS_COLOR[s]; a+=`<circle cx="${CXv}" cy="${CYv}" r="${Rv}" fill="none" stroke="${corFatia}" stroke-width="34" stroke-dasharray="${d} ${Cv-d}" stroke-dashoffset="${-ov}"/>`; ov+=d; }); return a; })()}
                             </svg>
                             <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:300;color:#334155;">${total}</div>
                         </div>
