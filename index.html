@@ -12,7 +12,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, browserSessionPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCBo8BUsjqM0lrKlRCSxOcIBWsBB0J7REs",
@@ -26,6 +26,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+
+        // Sessão expira ao fechar o app — sem login automático
+        await setPersistence(auth, browserSessionPersistence);
 
         // Expõe o Firestore globalmente para uso no restante do script
         window._firestore = db;
@@ -119,7 +122,7 @@
             display: flex; align-items: center; justify-content: center; overflow-y: auto;
         }
         .auth-box { width: 360px; padding: 40px 20px; }
-        .auth-logo { text-align:center; margin-bottom:32px; }
+        .auth-logo { text-align:left; margin-bottom:32px; }
         .auth-logo img { width:100%; max-width:240px; height:auto; object-fit:contain; }
         .auth-page-title { text-align:center; font-size:18px; font-weight:600; color:#1e293b; margin-bottom:6px; }
         .auth-page-sub { text-align:center; font-size:13px; color:#64748b; margin-bottom:24px; }
@@ -237,14 +240,16 @@
             /* Filtros no header ficam ocultos — vão para bottom sheet */
             #topo-app .flex.gap-2 { display: none !important; }
 
-            /* Sidebar de listas — largura total no mobile */
+            /* Sidebar de listas — largura total no mobile, altura total, sem empilhamento */
             #sidebar-listas {
                 width: 100% !important;
                 min-width: 0 !important;
                 border-right: none !important;
-                border-bottom: 1px solid #e2e8f0;
+                border-bottom: none !important;
                 flex-shrink: 0;
-                max-height: 45vh;
+                max-height: none !important;
+                height: 100% !important;
+                flex: 1 !important;
             }
             /* container flex principal do app vira coluna scrollável */
             #main-app > div.flex.flex-col > div.flex.flex-1 {
@@ -389,6 +394,8 @@
             box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         #filter-sheet.open {
             display: block;
@@ -716,7 +723,7 @@
             </header>
             <div class="flex flex-1 overflow-hidden">
                 <aside id="sidebar-listas" class="w-80 border-r bg-white flex flex-col no-print">
-                    <div class="overflow-y-auto flex-1">
+                    <div class="overflow-y-auto flex-1" id="sidebar-listas-scroll">
                         <div class="p-3 bg-slate-50 text-[10px] font-black border-b flex justify-between items-center text-slate-400 group/title">
                             <div class="flex items-center gap-2">
                                 <span>TRATATIVAS ATIVAS</span>
@@ -729,6 +736,13 @@
                         <nav id="lista-ativa"></nav>
                         <div class="header-especial-full"><div class="font-normal">ACOMPANHAMENTO ESPECIAL</div><span id="count-especial" class="font-normal text-[10px]">0/0</span></div>
                         <nav id="lista-especial" class="min-h-[100px]"></nav>
+                        <!-- Botão voltar ao topo — visível só no mobile -->
+                        <div id="btn-topo-lista" style="display:none;justify-content:center;padding:16px 16px calc(var(--bottom-nav-h) + var(--safe-bottom, 0px) + 24px);">
+                            <button onclick="document.getElementById('sidebar-listas-scroll').scrollTop=0"
+                                style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;">
+                                <i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo
+                            </button>
+                        </div>
                     </div>
                 </aside>
                 <main id="painel-rolagem" class="flex-1 p-8"></main>
@@ -1231,7 +1245,7 @@
                 const div = document.createElement('div');
                 div.className = `p-4 border-b flex justify-between items-center cursor-pointer hover:bg-slate-50 item-sidebar-container ${AppEngine.itemAtivoId === p.id ? 'item-active' : ''}`;
                 div.setAttribute('data-id', p.id); div.onclick = () => { DashEngine.fechar(); this.abrirDetalhes(p.id); };
-                div.innerHTML = `<div class="flex items-center gap-2"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-3 h-3"></i></div><div class="text-[11px] uppercase text-slate-700">${p.nome}</div></div><div class="flex items-center gap-3"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
+                div.innerHTML = `<div class="flex items-center gap-2"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div class="text-[11px] uppercase text-slate-700">${p.nome}</div></div><div class="flex items-center gap-3"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
                 container.appendChild(div);
             });
             Sortable.create(container, { group: 'sidebar', animation: 150, handle: '.handle', onEnd: async (e) => {
@@ -1252,7 +1266,13 @@
             this.renderListas();
             const painel = document.getElementById('painel-rolagem');
             document.getElementById('btn-salvar-geral').classList.remove('hidden');
-            painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding-bottom:80px"><div class="flex justify-between items-start mb-6 border-b pb-6" style="flex-wrap:wrap;gap:12px;"><div><h2 contenteditable="true" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2><p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg}</p></div><div class="flex gap-2"><select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" class="p-2 border rounded font-normal text-[10px] bg-white"><option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option><option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option><option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option><option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option><option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option></select><button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="secao-card"><div class="secao-header"><span>Contexto</span></div><div contenteditable="true" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div></div><div class="secao-card"><div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div id="logs-container" class="p-4 space-y-3"></div><div id="input-log-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div><div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div><div class="secao-card"><div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div class="p-4"><ul id="prioridades-sort" class="space-y-2">${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div><div contenteditable="true" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space: pre-wrap; word-break: break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}</ul></div><div id="input-pendencia-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div><div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div></div>`;
+            painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding-bottom:80px"><div class="flex justify-between items-start mb-6 border-b pb-6" style="flex-wrap:wrap;gap:12px;"><div><h2 contenteditable="true" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2><p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg}</p></div><div class="flex gap-2"><select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" class="p-2 border rounded font-normal text-[10px] bg-white"><option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option><option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option><option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option><option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option><option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option></select><button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="secao-card"><div class="secao-header"><span>Contexto</span></div><div contenteditable="true" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div></div><div class="secao-card"><div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div id="logs-container" class="p-4 space-y-3"></div><div id="input-log-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div><div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div><div class="secao-card"><div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div class="p-4"><ul id="prioridades-sort" class="space-y-2">${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div contenteditable="true" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space: pre-wrap; word-break: break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}</ul></div><div id="input-pendencia-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div><div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div></div>
+            <div style="display:flex;justify-content:center;padding:16px 16px calc(var(--bottom-nav-h, 0px) + var(--safe-bottom, 0px) + 24px);">
+                <button onclick="document.getElementById('painel-rolagem').scrollTop=0"
+                    style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;">
+                    <i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo
+                </button>
+            </div>`;
             await this.updateLogUI(id);
             // (g) Enter no título da demanda dispara salvar
             document.getElementById('edit-nome').addEventListener('keydown', function(e) {
@@ -1679,6 +1699,10 @@
             sl.style.overflowY    = 'auto';
             sl.style.borderRight  = 'none';
             sl.style.borderBottom = 'none';
+            // Mostra botão voltar ao topo
+            const btnTopo = document.getElementById('btn-topo-lista');
+            if (btnTopo) btnTopo.style.display = 'flex';
+            lucide.createIcons();
         },
         _showEdicao() {
             document.getElementById('painel-dash').style.display    = 'none';
@@ -1784,6 +1808,21 @@
             if (dBusca && mBusca) dBusca.addEventListener('input', () => { mBusca.value = dBusca.value; });
 
             if (!this.isMobile()) return;
+
+            // Fecha filter sheet ao rolar a página para baixo
+            const _self = this;
+            const scrollTargets = [
+                document.getElementById('painel-dash'),
+                document.getElementById('painel-rolagem'),
+                document.getElementById('sidebar-listas-scroll')
+            ];
+            scrollTargets.forEach(el => {
+                if (el) el.addEventListener('scroll', () => {
+                    if (document.getElementById('filter-sheet').classList.contains('open')) {
+                        _self.closeFilterSheet();
+                    }
+                }, { passive: true });
+            });
 
             // Swipe down no filter sheet fecha ele
             const sheet = document.getElementById('filter-sheet');
