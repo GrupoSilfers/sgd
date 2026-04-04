@@ -1696,6 +1696,21 @@
             DashEngine.abrir();   // re-renderiza o dash (já tratado no patch abaixo)
         },
 
+        // Abre edição direto do dash (mobile)
+        _openDetalheFromDash(id) {
+            // Fecha dash, prepara vista lista
+            document.getElementById('painel-dash').style.display  = 'none';
+            document.getElementById('painel-rolagem').style.display = '';
+            const sl = document.getElementById('sidebar-listas');
+            if (sl) { sl.style.display = 'flex'; sl.style.maxHeight = 'none'; sl.style.height = 'auto'; sl.style.borderRight = 'none'; sl.style.borderBottom = '1px solid #e2e8f0'; }
+            const wrapper = document.querySelector('#main-app > div.flex.flex-col > div.flex.flex-1');
+            if (wrapper) { wrapper.style.flexDirection = 'column'; wrapper.style.overflowY = 'auto'; }
+            this._view = 'list';
+            this._setActive('list');
+            // Abre detalhes (o patch do abrirDetalhes cuida do resto)
+            RenderEngine.abrirDetalhes(id);
+        },
+
         // ── VISTA LISTA ────────────────────────────────────────────
         // Mostra sidebar-listas + painel-rolagem em coluna no mobile.
         // A lista de demandas obedece os filtros normais (RenderEngine.renderListas).
@@ -1790,12 +1805,18 @@
 
             if (!this.isMobile()) return;
 
-            // Swipe down fecha o filter sheet
+            // Swipe down fecha o filter sheet (robusto: verifica direção e distância)
             const sheet = document.getElementById('filter-sheet');
-            let _sy = 0;
-            sheet.addEventListener('touchstart', e => { _sy = e.touches[0].clientY; }, { passive: true });
-            sheet.addEventListener('touchend',   e => {
-                if (e.changedTouches[0].clientY - _sy > 60) this.closeFilterSheet();
+            let _sy = 0, _sx = 0;
+            sheet.addEventListener('touchstart', e => {
+                _sy = e.touches[0].clientY;
+                _sx = e.touches[0].clientX;
+            }, { passive: true });
+            sheet.addEventListener('touchend', e => {
+                const dy = e.changedTouches[0].clientY - _sy;
+                const dx = Math.abs(e.changedTouches[0].clientX - _sx);
+                // Fecha se: deslizou mais de 55px pra baixo E mais vertical que horizontal
+                if (dy > 55 && dy > dx) this.closeFilterSheet();
             }, { passive: true });
 
             // Fecha drawer ao clicar nos items do sidebar
@@ -1897,7 +1918,7 @@
         const prioritarias = STATUS_ORDER.filter(s => s !== 'urgente').flatMap(s => db.filter(i => i.status === s));
 
         const rowItem = (i) =>
-            `<div onclick="DashEngine.fechar();MobileUI.navLista();setTimeout(()=>RenderEngine.abrirDetalhes('${i.id}'),50)"
+            `<div onclick="MobileUI._openDetalheFromDash('${i.id}')"
                   style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;-webkit-tap-highlight-color:transparent;">
                 <span style="width:9px;height:9px;border-radius:50%;background:${STATUS_COLOR[i.status]};flex-shrink:0;"></span>
                 <span style="font-size:12px;color:#1e293b;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i.nome}</span>
@@ -1943,7 +1964,7 @@
             // ── Próximas Ações
             `<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;margin:0 16px 16px;overflow:hidden;">
                 <div style="padding:12px 16px 8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;">
-                    🔴 Próximas Ações Recomendadas (${urgentes.length})
+                    ⚠️ Próximas Ações Recomendadas (${urgentes.length})
                 </div>
                 ${urgentes.length ? urgentes.map(rowItem).join('') : '<p style="font-size:12px;color:#94a3b8;padding:14px 16px;">Nenhuma demanda urgente.</p>'}
             </div>` +
