@@ -122,8 +122,8 @@
             display: flex; align-items: center; justify-content: center; overflow-y: auto;
         }
         .auth-box { width: 360px; padding: 40px 20px; }
-        .auth-logo { text-align:left; margin-bottom:32px; }
-        .auth-logo img { width:100%; max-width:240px; height:auto; object-fit:contain; }
+        .auth-logo { text-align:left; margin-bottom:32px; padding-left: 46px; }
+        .auth-logo img { width:100%; max-width:220px; height:auto; object-fit:contain; }
         .auth-page-title { text-align:center; font-size:18px; font-weight:600; color:#1e293b; margin-bottom:6px; }
         .auth-page-sub { text-align:center; font-size:13px; color:#64748b; margin-bottom:24px; }
         .auth-field { margin-bottom:16px; }
@@ -251,10 +251,10 @@
                 height: 100% !important;
                 flex: 1 !important;
             }
-            /* container flex principal do app vira coluna scrollável */
+            /* container flex principal do app — coluna, sem scroll próprio */
             #main-app > div.flex.flex-col > div.flex.flex-1 {
                 flex-direction: column;
-                overflow-y: auto;
+                overflow: hidden;
             }
 
             /* Painel principal */
@@ -290,19 +290,29 @@
         /* ── MOBILE ONLY (< 768px) ─────────────── */
         @media (max-width: 767px) {
 
-            /* Painel com as duas seções empilhadas */
+            /* Coluna única — sem divisão de tela */
             #main-app > div > div.flex.flex-1 {
                 flex-direction: column !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
+                overflow: hidden !important;
             }
 
-            /* Lista lateral fica colapsável */
+            /* Lista: ocupa 100% da tela, sem altura limitada */
             #sidebar-listas {
-                max-height: 220px;
-                transition: max-height 0.3s ease;
+                width: 100% !important;
+                max-height: none !important;
+                height: 100% !important;
+                flex: 1 !important;
+                overflow-y: auto !important;
+                border-right: none !important;
+                border-bottom: none !important;
             }
-            #sidebar-listas.collapsed-mobile { max-height: 44px; overflow: hidden; }
+
+            /* Painel de edição: ocupa 100% da tela */
+            #painel-rolagem {
+                width: 100% !important;
+                flex: 1 !important;
+                overflow-y: auto !important;
+            }
 
             /* Dashboard KPIs em 2 colunas no mobile */
             .dash-kpi-grid-mobile {
@@ -1706,8 +1716,12 @@
         },
         _showEdicao() {
             document.getElementById('painel-dash').style.display    = 'none';
-            document.getElementById('painel-rolagem').style.display = '';
-            document.getElementById('painel-rolagem').style.overflow = 'auto';
+            const pr = document.getElementById('painel-rolagem');
+            pr.style.display   = 'block';
+            pr.style.flex      = '1';
+            pr.style.width     = '100%';
+            pr.style.overflowY = 'auto';
+            pr.style.height    = '100%';
             document.getElementById('sidebar-listas').style.display = 'none';
         },
 
@@ -1809,14 +1823,16 @@
 
             if (!this.isMobile()) return;
 
-            // Fecha filter sheet ao rolar a página para baixo
+            // Fecha filter sheet ao rolar qualquer painel — usa captura no window
             const _self = this;
-            const scrollTargets = [
-                document.getElementById('painel-dash'),
-                document.getElementById('painel-rolagem'),
-                document.getElementById('sidebar-listas-scroll')
-            ];
-            scrollTargets.forEach(el => {
+            window.addEventListener('scroll', () => {
+                if (document.getElementById('filter-sheet').classList.contains('open')) {
+                    _self.closeFilterSheet();
+                }
+            }, { passive: true, capture: true });
+            // Também monitora scroll nos painéis com overflow
+            ['painel-dash', 'painel-rolagem', 'sidebar-listas-scroll'].forEach(elId => {
+                const el = document.getElementById(elId);
                 if (el) el.addEventListener('scroll', () => {
                     if (document.getElementById('filter-sheet').classList.contains('open')) {
                         _self.closeFilterSheet();
