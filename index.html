@@ -510,7 +510,7 @@
 
                 <!-- LOGIN -->
                 <div id="auth-login">
-                    <div class="auth-page-title">Bem-vindo...</div>
+                    <div class="auth-page-title">Bem-vindo de volta</div>
                     <div class="auth-page-sub">Acesse o sistema com suas credenciais</div>
                     <div id="login-err" class="auth-err"></div>
                     <div class="auth-field">
@@ -1306,6 +1306,8 @@
                 if (btn && pr.scrollHeight > pr.clientHeight) btn.style.display = 'flex';
             });
         },
+
+        async updateLogUI(id) {
             const logs = await StorageService.getLogs(id);
             document.getElementById('logs-container').innerHTML = [...logs].reverse().map((l, i) => {
                 const idx = logs.length - 1 - i;
@@ -2028,6 +2030,7 @@
                 btn.style.display = 'flex';
             }
         });
+    };
 
     // 6. AppEngine.init → inicializa MobileUI depois do app carregar
     const _origAppInit = AppEngine.init.bind(AppEngine);
