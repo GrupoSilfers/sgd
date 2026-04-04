@@ -175,113 +175,113 @@
     <div id="auth-overlay">
         <div class="auth-panel-img"></div>
         <div class="auth-panel-form">
-            <div class="auth-box" style="width: auto; min-width: 360px; display: flex; flex-direction: column; align-items: center;">
+            <div class="auth-box">
                 <div class="auth-logo"><img src="sgd_tlog2.png" alt="SGD"></div>
 
-                <div id="auth-login" style="width: 100%; max-width: 320px;">
+                <!-- LOGIN -->
+                <div id="auth-login">
                     <div class="auth-page-title">Bem-vindo de volta</div>
                     <div class="auth-page-sub">Acesse o sistema com suas credenciais</div>
                     <div id="login-err" class="auth-err"></div>
                     <div class="auth-field">
-                        <label class="auth-label">Usuário</label>
+                        <label class="auth-label">E-mail Institucional</label>
                         <div class="auth-input-wrap">
-                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">person_outline</span></div>
-                            <input type="text" id="login-email" placeholder="Ex: joao.silva">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">mail_outline</span></div>
+                            <input type="email" id="login-email" placeholder="nome@infrasa.gov.br" autocomplete="email">
                         </div>
                     </div>
                     <div class="auth-field">
                         <label class="auth-label">Senha</label>
                         <div class="auth-input-wrap">
                             <div class="auth-icon"><span class="material-icons" style="font-size:20px;">lock_outline</span></div>
-                            <input type="password" id="login-senha" placeholder="••••••••">
+                            <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password">
                         </div>
                     </div>
                     <button class="auth-btn" id="btn-login" onclick="AuthLayer.login()">Acessar Sistema</button>
                     <div class="auth-links">
                         Não possui conta? <span class="auth-link" onclick="AuthLayer.irCadastro()">Cadastrar novo usuário</span>
+                        <span class="auth-link2">Autenticação em dois fatores</span>
                     </div>
                 </div>
 
-                <div id="auth-cad" style="display: none; width: 100%;">
+                <!-- CADASTRO -->
+                <div id="auth-cad">
                     <div class="auth-page-title">Crie sua conta</div>
                     <div class="auth-page-sub">Preencha os dados para criar seu acesso</div>
                     <div id="cad-err" class="auth-err"></div>
-                    
-                    <div style="display: grid; grid-template-columns: 260px 260px; gap: 12px 20px; width: fit-content; margin: 0 auto;">
-                        <div class="auth-field">
-                            <label class="auth-label">Nome Completo</label>
-                            <div class="auth-input-wrap">
-                                <div class="auth-icon"><span class="material-icons" style="font-size:20px;">badge</span></div>
-                                <input type="text" id="cad-nome" placeholder="Ex: João Silva">
-                            </div>
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">E-mail Institucional</label>
-                            <div class="auth-input-wrap">
-                                <div class="auth-icon"><span class="material-icons" style="font-size:20px;">mail_outline</span></div>
-                                <input type="email" id="cad-email" placeholder="nome@infrasa.gov.br">
-                            </div>
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">Senha</label>
-                            <div class="auth-input-wrap">
-                                <div class="auth-icon"><span class="material-icons" style="font-size:20px;">lock_outline</span></div>
-                                <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres">
-                            </div>
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">Confirmar Senha</label>
-                            <div class="auth-input-wrap">
-                                <div class="auth-icon"><span class="material-icons" style="font-size:20px;">check_circle_outline</span></div>
-                                <input type="password" id="cad-confirma" placeholder="Repita a senha">
-                            </div>
-                        </div>
-                        <div class="auth-field">
-                            <label class="auth-label">Área / Lotação</label>
-                            <div class="auth-input-wrap">
-                                <div class="auth-icon"><span class="material-icons" style="font-size:20px;">business</span></div>
-                                <div class="auth-sel-wrap">
-                                    <select id="cad-area">
-                                        <option value="" disabled selected>Selecione sua área</option>
-                                        <option value="SUINM">SUINM</option>
-                                        <option value="GEPEM">GEPEM</option>
-                                        <option value="GEMAR">GEMAR</option>
-                                        <option value="GEIN">GEIN</option>
-                                    </select>
-                                    <span class="material-icons auth-sel-arrow">expand_more</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="auth-field" style="display: flex; align-items: flex-end;">
-                            <button class="auth-btn" id="btn-cadastrar" onclick="AuthLayer.cadastrar()" style="margin-top: 0; height: 46px; width: 100%;">
-                                Criar Conta
-                            </button>
+                    <div id="cad-ok" class="auth-ok"></div>
+                    <div class="auth-field">
+                        <label class="auth-label">Nome Completo</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">badge</span></div>
+                            <input type="text" id="cad-nome" placeholder="Ex: João Silva">
                         </div>
                     </div>
-                    <div class="auth-links" style="margin-top: 24px;">
+                    <div class="auth-field">
+                        <label class="auth-label">E-mail Institucional</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">mail_outline</span></div>
+                            <input type="email" id="cad-email" placeholder="nome@infrasa.gov.br">
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">Área / Lotação</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">business</span></div>
+                            <div class="auth-sel-wrap">
+                                <select id="cad-area">
+                                    <option value="" disabled selected>Selecione sua área</option>
+                                    <option value="SUINM">SUINM</option>
+                                    <option value="GEPEM">GEPEM</option>
+                                    <option value="GEMAR">GEMAR</option>
+                                    <option value="GEIN">GEIN</option>
+                                </select>
+                                <span class="material-icons auth-sel-arrow">expand_more</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">Senha</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">lock_outline</span></div>
+                            <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres">
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label">Confirmar Senha</label>
+                        <div class="auth-input-wrap">
+                            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">check_circle_outline</span></div>
+                            <input type="password" id="cad-confirma" placeholder="Repita a senha">
+                        </div>
+                    </div>
+                    <button class="auth-btn" id="btn-cadastrar" onclick="AuthLayer.cadastrar()">Criar Conta</button>
+                    <div class="auth-links">
                         Já possui conta? <span class="auth-link" onclick="AuthLayer.irLogin()">Fazer Login</span>
                     </div>
                 </div>
-            </div> </div>
+            </div>
+        </div>
     </div>
-    
     <!-- ═══ FIM AUTH OVERLAY ═══ -->
 
     <!-- Tela de carregamento -->
-    <div style="display: flex; align-items: flex-end; gap: 10px; margin-bottom: 20px; width: 100%;">
-    <div class="auth-field" style="flex: 1; margin-bottom: 0;">
-        <label class="auth-label">Confirmar Senha</label>
-        <div class="auth-input-wrap">
-            <div class="auth-icon"><span class="material-icons" style="font-size:20px;">check_circle_outline</span></div>
-            <input type="password" id="cad-confirma-senha" placeholder="Repita a senha">
-        </div>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p>Conectando ao banco de dados...</p>
     </div>
 
-    <button class="auth-btn" id="btn-cadastrar" style="margin-top: 0; height: 46px; width: auto; padding: 0 20px; white-space: nowrap; flex-shrink: 0;">
-        Criar Conta
-    </button>
-</div>
-   
+    <!-- Badge de sync -->
+    <div id="sync-status" class="no-print">
+        <div id="sync-dot"></div>
+        <span id="sync-msg">Sincronizado</span>
+    </div>
+
+    <div id="report-toolbar" class="no-print">
+        <button onclick="RenderEngine.copiarTexto()" class="icon-btn" title="Copiar Conteúdo"><i data-lucide="copy"></i></button>
+        <button id="btn-pdf-trigger" class="icon-btn text-emerald-600" title="Gerar PDF"><i data-lucide="file-text"></i></button>
+        <div class="w-px h-6 bg-slate-200 mx-1"></div>
+        <button onclick="Navigation.voltarParaApp()" class="icon-btn text-red-500" title="Fechar"><i data-lucide="x"></i></button>
+    </div>
 
     <div id="main-app">
         <aside id="sidebar-infra" class="no-print">
