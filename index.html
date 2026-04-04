@@ -165,6 +165,302 @@
         #auth-cad.on { display:block; }
         #auth-login.off { display:none; }
         @media (max-width:900px) { .auth-panel-img { display:none; } .auth-panel-form { flex:1; } }
+
+        /* ═══════════════════════════════════════════════════════
+           RESPONSIVO — MOBILE & TABLET
+           Breakpoints: sm=480px  md=768px  lg=1024px
+        ═══════════════════════════════════════════════════════ */
+
+        /* ── VARIÁVEIS MOBILE ──────────────────── */
+        :root {
+            --bottom-nav-h: 64px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* ── LAYOUT PRINCIPAL ──────────────────── */
+        @media (max-width: 1023px) {
+            /* O grid vira coluna única */
+            #main-app {
+                display: flex !important;
+                flex-direction: column !important;
+                height: 100dvh !important;
+                overflow: hidden !important;
+            }
+
+            /* Sidebar lateral vira DRAWER deslizante */
+            #sidebar-infra {
+                position: fixed !important;
+                top: 0; left: 0; bottom: 0;
+                width: 280px !important;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s !important;
+                z-index: 500 !important;
+                overflow-y: auto;
+            }
+            #sidebar-infra.mobile-open {
+                transform: translateX(0) !important;
+                box-shadow: 4px 0 32px rgba(0,0,0,0.35) !important;
+            }
+            /* Overlay escuro atrás do drawer */
+            #drawer-overlay {
+                display: none;
+                position: fixed; inset: 0;
+                background: rgba(0,0,0,0.45);
+                z-index: 499;
+                backdrop-filter: blur(2px);
+                -webkit-backdrop-filter: blur(2px);
+            }
+            #drawer-overlay.on { display: block; }
+
+            /* Área de conteúdo ocupa tudo */
+            #main-app > div.flex.flex-col { flex: 1; overflow: hidden; min-height: 0; }
+
+            /* Header — mais compacto */
+            #topo-app {
+                padding: 10px 12px !important;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            #topo-app h1 { font-size: 13px !important; }
+            #topo-app .text-\[13px\] { font-size: 10px !important; }
+            #topo-app .text-\[11px\] { display: none; }
+            #topo-app .text-slate-300 { display: none; }
+
+            /* Filtros no header ficam ocultos — vão para bottom sheet */
+            #topo-app .flex.gap-2 { display: none !important; }
+
+            /* Sidebar de listas — largura total no mobile */
+            #sidebar-listas {
+                width: 100% !important;
+                min-width: 0 !important;
+                border-right: none !important;
+                border-bottom: 1px solid #e2e8f0;
+                flex-shrink: 0;
+                max-height: 45vh;
+            }
+
+            /* Painel principal */
+            #painel-rolagem { padding: 16px !important; }
+            #painel-dash { padding: 0.75rem !important; }
+
+            /* Padding inferior para bottom nav */
+            #painel-rolagem, #painel-dash {
+                padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px) !important;
+            }
+
+            /* Folha A4 no mobile fica fluida */
+            .folha-a4 { width: 100% !important; padding: 8mm !important; }
+
+            /* Modais — full screen no mobile */
+            #modal-user > div,
+            #modal-gestao > div,
+            #modal-titulo > div {
+                width: calc(100vw - 32px) !important;
+                max-width: 420px;
+                margin: 0 auto;
+            }
+
+            /* Botão salvar — repositionado acima do bottom nav */
+            #btn-salvar-geral {
+                bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px) !important;
+                right: 16px !important;
+                padding: 12px 20px !important;
+                font-size: 11px !important;
+            }
+        }
+
+        /* ── MOBILE ONLY (< 768px) ─────────────── */
+        @media (max-width: 767px) {
+
+            /* Painel com as duas seções empilhadas */
+            #main-app > div > div.flex.flex-1 {
+                flex-direction: column !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+
+            /* Lista lateral fica colapsável */
+            #sidebar-listas {
+                max-height: 220px;
+                transition: max-height 0.3s ease;
+            }
+            #sidebar-listas.collapsed-mobile { max-height: 44px; overflow: hidden; }
+
+            /* Dashboard KPIs em 2 colunas no mobile */
+            .dash-kpi-grid-mobile {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
+            /* Detalhes da demanda — título menor */
+            #painel-rolagem .text-3xl { font-size: 1.25rem !important; }
+            #painel-rolagem .max-w-5xl { max-width: 100% !important; }
+            #painel-rolagem .flex.justify-between.items-start {
+                flex-direction: column !important;
+                gap: 12px !important;
+            }
+            #painel-rolagem .flex.gap-2:has(#edit-status) {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            /* Report toolbar no mobile */
+            #report-toolbar {
+                top: auto !important;
+                bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px) !important;
+                right: 16px !important;
+                left: 16px !important;
+                justify-content: center;
+            }
+        }
+
+        /* ── TABLET (768px – 1023px) ───────────── */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            #main-app > div > div.flex.flex-1 {
+                flex-direction: row !important;
+            }
+            #sidebar-listas {
+                width: 260px !important;
+                max-height: none !important;
+                border-right: 1px solid #e2e8f0 !important;
+                border-bottom: none !important;
+            }
+        }
+
+        /* ── BOTTOM NAVIGATION BAR ─────────────── */
+        #bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: var(--bottom-nav-h);
+            padding-bottom: var(--safe-bottom);
+            background: #1e293b;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            z-index: 400;
+            align-items: stretch;
+            justify-content: space-around;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
+        }
+        @media (max-width: 1023px) { #bottom-nav { display: flex; } }
+
+        .bnav-item {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; flex: 1; gap: 3px;
+            cursor: pointer; color: #94a3b8;
+            transition: color 0.2s; font-size: 9px;
+            font-family: sans-serif; letter-spacing: .03em;
+            text-transform: uppercase; font-weight: 600;
+            -webkit-tap-highlight-color: transparent;
+            border: none; background: none; padding: 0;
+        }
+        .bnav-item i { width: 20px; height: 20px; }
+        .bnav-item.active { color: #1abc9c; }
+        .bnav-item:active { opacity: 0.7; }
+
+        /* Botão central — nova demanda — destacado */
+        .bnav-center {
+            flex: 0 0 56px; margin: 8px 4px;
+            background: #1abc9c; border-radius: 16px;
+            color: white !important; font-size: 8px;
+            box-shadow: 0 4px 16px rgba(26,188,156,0.4);
+        }
+        .bnav-center:active { transform: scale(0.95); }
+
+        /* ── FILTER BOTTOM SHEET ───────────────── */
+        #filter-sheet {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            padding: 0 0 calc(var(--bottom-nav-h) + var(--safe-bottom));
+            z-index: 450;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+        }
+        #filter-sheet.open {
+            display: block;
+            transform: translateY(0);
+        }
+        #filter-sheet-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 449;
+        }
+        #filter-sheet-overlay.on { display: block; }
+
+        .sheet-handle {
+            width: 40px; height: 4px; border-radius: 2px;
+            background: #e2e8f0; margin: 12px auto 16px;
+        }
+        .sheet-title {
+            text-align: center; font-size: 13px; font-weight: 700;
+            color: #1e293b; text-transform: uppercase; letter-spacing: .06em;
+            margin-bottom: 16px;
+        }
+        .sheet-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 24px; font-size: 13px; cursor: pointer;
+            color: #334155; transition: background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .sheet-option:active { background: #f8fafc; }
+        .sheet-option.selected { color: #1abc9c; font-weight: 700; }
+        .sheet-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .sheet-section-label {
+            padding: 8px 24px 4px;
+            font-size: 10px; font-weight: 800; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: .08em;
+        }
+        .sheet-select-row {
+            display: flex; gap: 8px; padding: 0 24px 16px;
+        }
+        .sheet-select-row select {
+            flex: 1; padding: 10px 12px; border: 1.5px solid #e2e8f0;
+            border-radius: 8px; font-size: 13px; background: white;
+            color: #334155; outline: none;
+        }
+        .sheet-search {
+            padding: 0 24px 16px;
+        }
+        .sheet-search input {
+            width: 100%; padding: 10px 14px;
+            border: 1.5px solid #e2e8f0; border-radius: 8px;
+            font-size: 13px; outline: none; color: #334155;
+            transition: border-color .2s;
+        }
+        .sheet-search input:focus { border-color: #1abc9c; }
+
+        /* ── TOUCH IMPROVEMENTS ────────────────── */
+        @media (max-width: 1023px) {
+            /* Alvos de toque maiores */
+            .nav-item { padding: 14px 24px !important; }
+            .nav-subitem { padding: 14px 24px 14px 60px !important; }
+            .btn-add-mini { width: 28px !important; height: 28px !important; }
+
+            /* Itens da lista de demandas — mais espaço */
+            .item-sidebar-container { padding: 14px 12px !important; }
+
+            /* Listas de demandas mais legíveis */
+            .item-sidebar-container .text-\[11px\] { font-size: 12px !important; }
+
+            /* Sync badge acima do bottom nav */
+            #sync-status {
+                bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 8px) !important;
+            }
+        }
+
+        /* ── ANIMAÇÃO SLIDE-IN DO DRAWER ───────── */
+        @keyframes drawerIn {
+            from { transform: translateX(-100%); }
+            to   { transform: translateX(0); }
+        }
+
+        /* ── SWIPE VISUAL HINT ─────────────────── */
+        @media (max-width: 767px) {
+            .auth-box { padding: 32px 20px; }
+        }
+
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -276,6 +572,69 @@
         <span id="sync-msg">Sincronizado</span>
     </div>
 
+    <!-- ═══ DRAWER OVERLAY ═══ -->
+    <div id="drawer-overlay" onclick="MobileUI.closeDrawer()"></div>
+
+    <!-- ═══ BOTTOM NAVIGATION ═══ -->
+    <nav id="bottom-nav" class="no-print">
+        <button class="bnav-item" id="bnav-menu" onclick="MobileUI.toggleDrawer()">
+            <i data-lucide="menu"></i>
+            <span>Menu</span>
+        </button>
+        <button class="bnav-item" id="bnav-dash" onclick="MobileUI.navDash()">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+        </button>
+        <button class="bnav-item bnav-center" id="bnav-new" onclick="AppEngine.adicionarNovaDemanda()">
+            <i data-lucide="plus"></i>
+            <span>Nova</span>
+        </button>
+        <button class="bnav-item" id="bnav-list" onclick="MobileUI.navLista()">
+            <i data-lucide="list"></i>
+            <span>Demandas</span>
+        </button>
+        <button class="bnav-item" id="bnav-filter" onclick="MobileUI.openFilterSheet()">
+            <i data-lucide="sliders-horizontal"></i>
+            <span>Filtros</span>
+        </button>
+    </nav>
+
+    <!-- ═══ FILTER BOTTOM SHEET ═══ -->
+    <div id="filter-sheet-overlay" onclick="MobileUI.closeFilterSheet()"></div>
+    <div id="filter-sheet" class="no-print">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Filtros e Busca</div>
+        <div class="sheet-search">
+            <input type="text" id="busca-rapida-mobile" oninput="MobileUI.syncBusca(this.value)" placeholder="🔍 Pesquisar demanda...">
+        </div>
+        <div class="sheet-section-label">Status</div>
+        <div class="sheet-option selected" data-status="todos" onclick="MobileUI.setStatus('todos',this)">
+            <span class="sheet-dot" style="background:#94a3b8"></span> Todos
+        </div>
+        <div class="sheet-option" data-status="urgente" onclick="MobileUI.setStatus('urgente',this)">
+            <span class="sheet-dot" style="background:#ef4444"></span> Urgente
+        </div>
+        <div class="sheet-option" data-status="pendente" onclick="MobileUI.setStatus('pendente',this)">
+            <span class="sheet-dot" style="background:#facc15"></span> Pendente
+        </div>
+        <div class="sheet-option" data-status="andamento" onclick="MobileUI.setStatus('andamento',this)">
+            <span class="sheet-dot" style="background:#3b82f6"></span> Em Andamento
+        </div>
+        <div class="sheet-option" data-status="aguardando" onclick="MobileUI.setStatus('aguardando',this)">
+            <span class="sheet-dot" style="background:#e2e8f0;border:1px solid #cbd5e1"></span> Aguardando
+        </div>
+        <div class="sheet-option" data-status="concluido" onclick="MobileUI.setStatus('concluido',this)">
+            <span class="sheet-dot" style="background:#10b981"></span> Concluído
+        </div>
+        <div class="sheet-section-label" style="margin-top:8px;">Ordenação</div>
+        <div class="sheet-select-row">
+            <select id="sort-order-mobile" onchange="MobileUI.syncOrdem(this.value)">
+                <option value="asc">A → Z</option>
+                <option value="desc">Z → A</option>
+            </select>
+        </div>
+    </div>
+
     <div id="report-toolbar" class="no-print">
         <button onclick="RenderEngine.copiarTexto()" class="icon-btn" title="Copiar Conteúdo"><i data-lucide="copy"></i></button>
         <button id="btn-pdf-trigger" class="icon-btn text-emerald-600" title="Gerar PDF"><i data-lucide="file-text"></i></button>
@@ -366,7 +725,7 @@
     </div>
 
     <!-- Modais -->
-    <div id="modal-user" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden">
+    <div id="modal-user" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden" style="padding:16px;">
         <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
             <h3 class="text-lg font-bold mb-4">Configurar Usuário</h3>
             <div class="space-y-4">
@@ -376,7 +735,7 @@
             <div class="flex justify-end gap-2 mt-6"><button onclick="Navigation.toggleModal('modal-user')" class="px-4 py-2 text-sm">Cancelar</button><button onclick="AppEngine.salvarConfig()" class="px-4 py-2 text-sm bg-emerald-600 text-white rounded font-bold">SALVAR</button></div>
         </div>
     </div>
-    <div id="modal-gestao" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden">
+    <div id="modal-gestao" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden" style="padding:16px;">
         <div class="bg-white p-6 rounded-lg w-96 shadow-xl">
             <h3 class="text-lg font-bold mb-4">Configurar Gestão</h3>
             <div class="space-y-4">
@@ -387,7 +746,7 @@
             <div class="flex justify-end gap-2 mt-6"><button onclick="Navigation.toggleModal('modal-gestao')" class="px-4 py-2 text-sm">Cancelar</button><button onclick="AppEngine.salvarConfig()" class="px-4 py-2 text-sm bg-emerald-600 text-white rounded font-bold">SALVAR</button></div>
         </div>
     </div>
-    <div id="modal-titulo" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden">
+    <div id="modal-titulo" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden" style="padding:16px;">
         <div class="bg-white p-6 rounded-lg w-[500px] shadow-xl">
             <h3 class="text-lg font-bold mb-4">Área de Trabalho</h3>
             <div class="space-y-4">
@@ -701,6 +1060,20 @@
                 </div>`;
 
             painel.innerHTML = `
+            <style>
+                @media (max-width: 767px) {
+                    .dash-kpi-grid-mobile { grid-template-columns: repeat(2,1fr) !important; }
+                    #dash-bottom-grid { grid-template-columns: 1fr !important; }
+                    #dash-bottom-grid [style*="grid-column:1/3"] { grid-column: 1 !important; }
+                    #dash-bottom-grid [style*="grid-column:3/5"] { grid-column: 1 !important; }
+                }
+                @media (min-width: 768px) and (max-width: 1023px) {
+                    .dash-kpi-grid-mobile { grid-template-columns: repeat(2,1fr) !important; }
+                    #dash-bottom-grid { grid-template-columns: repeat(2,1fr) !important; }
+                    #dash-bottom-grid [style*="grid-column:1/3"] { grid-column: 1/2 !important; }
+                    #dash-bottom-grid [style*="grid-column:3/5"] { grid-column: 2/3 !important; }
+                }
+            </style>
             <div style="height:100%;display:flex;flex-direction:column;padding:1.2rem;">
 
                 <!-- Cabeçalho -->
@@ -710,7 +1083,7 @@
                 </div>
 
                 <!-- KPIs: 4 colunas iguais -->
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1rem;flex-shrink:0;">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1rem;flex-shrink:0;" class="dash-kpi-grid-mobile">
                     ${kpis.map(k => `
                     <div class="dash-card" onclick="${k.status ? `DashEngine.filtrarEAbrir('${k.status}')` : ''}"
                          style="border-top:3px solid ${k.borda};${k.status?'cursor:pointer;':''}transition:box-shadow .15s;"
@@ -723,7 +1096,7 @@
                 </div>
 
                 <!-- Linha inferior: 4 colunas — donut ocupa col 1-2, listas col 3-4 (b)(c) -->
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;flex:1;min-height:0;">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;flex:1;min-height:0;" id="dash-bottom-grid">
 
                     <!-- Donut: span 2 colunas = alinhado com Total+Em Andamento (b)(c) -->
                     <div class="dash-card" style="grid-column:1/3;display:flex;flex-direction:column;">
@@ -866,7 +1239,7 @@
             this.renderListas();
             const painel = document.getElementById('painel-rolagem');
             document.getElementById('btn-salvar-geral').classList.remove('hidden');
-            painel.innerHTML = `<div class="max-w-5xl mx-auto"><div class="flex justify-between items-start mb-6 border-b pb-6"><div><h2 contenteditable="true" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2><p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg}</p></div><div class="flex gap-2"><select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" class="p-2 border rounded font-normal text-[10px] bg-white"><option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option><option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option><option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option><option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option><option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option></select><button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="secao-card"><div class="secao-header"><span>Contexto</span></div><div contenteditable="true" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div></div><div class="secao-card"><div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div id="logs-container" class="p-4 space-y-3"></div><div id="input-log-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div><div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div><div class="secao-card"><div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div class="p-4"><ul id="prioridades-sort" class="space-y-2">${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div><div contenteditable="true" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space: pre-wrap; word-break: break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}</ul></div><div id="input-pendencia-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div><div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div></div>`;
+            painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding-bottom:80px"><div class="flex justify-between items-start mb-6 border-b pb-6" style="flex-wrap:wrap;gap:12px;"><div><h2 contenteditable="true" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2><p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg}</p></div><div class="flex gap-2"><select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" class="p-2 border rounded font-normal text-[10px] bg-white"><option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option><option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option><option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option><option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option><option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option></select><button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="secao-card"><div class="secao-header"><span>Contexto</span></div><div contenteditable="true" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div></div><div class="secao-card"><div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div id="logs-container" class="p-4 space-y-3"></div><div id="input-log-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div><div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div><div class="secao-card"><div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div class="p-4"><ul id="prioridades-sort" class="space-y-2">${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div><div contenteditable="true" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space: pre-wrap; word-break: break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}</ul></div><div id="input-pendencia-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div><div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div></div>`;
             await this.updateLogUI(id);
             // (g) Enter no título da demanda dispara salvar
             document.getElementById('edit-nome').addEventListener('keydown', function(e) {
@@ -1266,6 +1639,159 @@
     };
 
     window.addEventListener('keydown', e => { if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); AppEngine.salvarAlteracoesPagina(); } });
+
+    // ─────────────────────────────────────────────
+    // MOBILE UI — controla drawer, bottom nav, sheets
+    // ─────────────────────────────────────────────
+    const MobileUI = {
+        _activeNav: 'dash',
+
+        init() {
+            // Sincroniza busca desktop → mobile e vice-versa
+            const desktop = document.getElementById('busca-rapida');
+            const mobile  = document.getElementById('busca-rapida-mobile');
+            if (desktop && mobile) {
+                desktop.addEventListener('input', () => { mobile.value = desktop.value; });
+            }
+        },
+
+        isMobile() { return window.innerWidth < 1024; },
+
+        // ── DRAWER ──────────────────────────────
+        toggleDrawer() {
+            const sidebar = document.getElementById('sidebar-infra');
+            const overlay = document.getElementById('drawer-overlay');
+            const isOpen  = sidebar.classList.contains('mobile-open');
+            if (isOpen) { this.closeDrawer(); }
+            else {
+                sidebar.classList.add('mobile-open');
+                overlay.classList.add('on');
+                document.body.style.overflow = 'hidden';
+            }
+        },
+        closeDrawer() {
+            document.getElementById('sidebar-infra').classList.remove('mobile-open');
+            document.getElementById('drawer-overlay').classList.remove('on');
+            document.body.style.overflow = '';
+        },
+
+        // ── BOTTOM NAV ──────────────────────────
+        setActiveNav(id) {
+            this._activeNav = id;
+            document.querySelectorAll('.bnav-item:not(.bnav-center)').forEach(b => b.classList.remove('active'));
+            const el = document.getElementById('bnav-' + id);
+            if (el) el.classList.add('active');
+        },
+        navDash() {
+            this.closeDrawer();
+            this.closeFilterSheet();
+            this.setActiveNav('dash');
+            DashEngine.abrir();
+        },
+        navLista() {
+            this.closeDrawer();
+            this.closeFilterSheet();
+            this.setActiveNav('list');
+            // No mobile, mostra a lista e fecha o painel de detalhe
+            if (this.isMobile()) {
+                document.getElementById('painel-dash').style.display = 'none';
+                document.getElementById('painel-rolagem').style.display = '';
+                document.getElementById('painel-rolagem').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:#94a3b8;font-size:13px;gap:8px;"><i data-lucide=\"hand-pointer\" style=\"width:32px;height:32px;opacity:.4\"></i><span>Selecione uma demanda</span></div>';
+                lucide.createIcons();
+            }
+        },
+
+        // ── FILTER SHEET ────────────────────────
+        openFilterSheet() {
+            const sheet = document.getElementById('filter-sheet');
+            const overlay = document.getElementById('filter-sheet-overlay');
+            // Sync status atual
+            const currentStatus = document.getElementById('filter-status').value;
+            document.querySelectorAll('.sheet-option').forEach(o => {
+                o.classList.toggle('selected', o.dataset.status === currentStatus);
+            });
+            // Sync busca
+            const mobileInput = document.getElementById('busca-rapida-mobile');
+            if (mobileInput) mobileInput.value = document.getElementById('busca-rapida').value;
+            // Sync ordem
+            const mobileSort = document.getElementById('sort-order-mobile');
+            if (mobileSort) mobileSort.value = document.getElementById('sort-order').value;
+
+            sheet.classList.add('open');
+            overlay.classList.add('on');
+            this.setActiveNav('filter');
+        },
+        closeFilterSheet() {
+            document.getElementById('filter-sheet').classList.remove('open');
+            document.getElementById('filter-sheet-overlay').classList.remove('on');
+        },
+        setStatus(status, el) {
+            // Atualiza select desktop
+            document.getElementById('filter-status').value = status;
+            // Marca selecionado
+            document.querySelectorAll('.sheet-option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            RenderEngine.renderListas();
+            setTimeout(() => this.closeFilterSheet(), 200);
+        },
+        syncBusca(val) {
+            document.getElementById('busca-rapida').value = val;
+            RenderEngine.renderListas();
+        },
+        syncOrdem(val) {
+            document.getElementById('sort-order').value = val;
+            RenderEngine.renderListas();
+        }
+    };
+
+    // Patch Navigation.toggleSidebar para mobile usar drawer
+    const _origToggleSidebar = Navigation.toggleSidebar.bind(Navigation);
+    Navigation.toggleSidebar = function() {
+        if (MobileUI.isMobile()) { MobileUI.toggleDrawer(); }
+        else { _origToggleSidebar(); }
+    };
+
+    // Patch abrirDetalhes para fechar drawer no mobile e ativar nav
+    const _origAbrirDetalhes = RenderEngine.abrirDetalhes.bind(RenderEngine);
+    RenderEngine.abrirDetalhes = async function(id) {
+        if (MobileUI.isMobile()) {
+            MobileUI.closeDrawer();
+            MobileUI.setActiveNav('list');
+        }
+        await _origAbrirDetalhes(id);
+    };
+
+    // Patch DashEngine.abrir para ativar nav
+    const _origDashAbrir = DashEngine.abrir.bind(DashEngine);
+    DashEngine.abrir = function() {
+        _origDashAbrir();
+        if (MobileUI.isMobile()) MobileUI.setActiveNav('dash');
+    };
+
+    // Fecha drawer ao clicar em item do sidebar (mobile)
+    document.querySelectorAll('#sidebar-infra .nav-item, #sidebar-infra .nav-subitem').forEach(el => {
+        el.addEventListener('click', () => {
+            if (MobileUI.isMobile()) setTimeout(() => MobileUI.closeDrawer(), 120);
+        });
+    });
+
+    // Fecha filter sheet com swipe down (simples via touchstart/touchend)
+    (function() {
+        const sheet = document.getElementById('filter-sheet');
+        let startY = 0;
+        sheet.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+        sheet.addEventListener('touchend', e => {
+            if (e.changedTouches[0].clientY - startY > 60) MobileUI.closeFilterSheet();
+        }, { passive: true });
+    })();
+
+    // Inicializa MobileUI após app carregar
+    const _origAppInit = AppEngine.init.bind(AppEngine);
+    AppEngine.init = async function() {
+        await _origAppInit();
+        MobileUI.init();
+        if (MobileUI.isMobile()) MobileUI.setActiveNav('dash');
+    };
     </script>
 </body>
 </html>
