@@ -12,7 +12,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, browserSessionPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCBo8BUsjqM0lrKlRCSxOcIBWsBB0J7REs",
@@ -26,9 +26,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-
-        // Sessão expira ao fechar o app — sem login automático
-        await setPersistence(auth, browserSessionPersistence);
 
         // Expõe o Firestore globalmente para uso no restante do script
         window._firestore = db;
@@ -122,8 +119,8 @@
             display: flex; align-items: center; justify-content: center; overflow-y: auto;
         }
         .auth-box { width: 360px; padding: 40px 20px; }
-        .auth-logo { text-align:left; margin-bottom:32px; padding-left: 46px; }
-        .auth-logo img { width:100%; max-width:220px; height:auto; object-fit:contain; }
+        .auth-logo { text-align:center; margin-bottom:32px; }
+        .auth-logo img { width:100%; max-width:240px; height:auto; object-fit:contain; }
         .auth-page-title { text-align:center; font-size:18px; font-weight:600; color:#1e293b; margin-bottom:6px; }
         .auth-page-sub { text-align:center; font-size:13px; color:#64748b; margin-bottom:24px; }
         .auth-field { margin-bottom:16px; }
@@ -182,7 +179,15 @@
 
         /* ── LAYOUT PRINCIPAL ──────────────────── */
         @media (max-width: 1023px) {
-            /* O grid vira flex coluna */
+            /* painel-dash no mobile: scroll livre, altura auto */
+            #painel-dash {
+                display: block !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow-y: auto !important;
+                flex: 1 !important;
+            }
+            /* O grid vira coluna única */
             #main-app {
                 display: flex !important;
                 flex-direction: column !important;
@@ -215,73 +220,44 @@
             }
             #drawer-overlay.on { display: block; }
 
-            /* Coluna de conteúdo (header + painéis) ocupa o espaço restante */
-            #main-app > div.flex.flex-col {
-                flex: 1 !important;
-                overflow: hidden !important;
-                min-height: 0 !important;
-                display: flex !important;
-                flex-direction: column !important;
-            }
+            /* Área de conteúdo ocupa tudo */
+            #main-app > div.flex.flex-col { flex: 1; overflow: hidden; min-height: 0; }
 
             /* Header — mais compacto */
             #topo-app {
                 padding: 10px 12px !important;
                 flex-wrap: wrap;
                 gap: 8px;
-                flex-shrink: 0 !important;
             }
             #topo-app h1 { font-size: 13px !important; }
             #topo-app .text-\[13px\] { font-size: 10px !important; }
             #topo-app .text-\[11px\] { display: none; }
             #topo-app .text-slate-300 { display: none; }
+
             /* Filtros no header ficam ocultos — vão para bottom sheet */
             #topo-app .flex.gap-2 { display: none !important; }
 
-            /* ── CONTAINER DOS PAINÉIS: posição relativa para filhos absolute ── */
-            #main-app > div.flex.flex-col > div.flex.flex-1 {
-                position: relative !important;
-                flex: 1 !important;
-                overflow: hidden !important;
-                /* Desfaz flex row — os filhos serão absolute */
-                display: block !important;
-            }
-
-            /* ── CADA PAINEL OCUPA 100% DO CONTAINER, UM DE CADA VEZ ── */
-            #sidebar-listas,
-            #painel-rolagem,
-            #painel-dash {
-                position: absolute !important;
-                inset: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                overflow-y: auto !important;
-                box-sizing: border-box !important;
-            }
-
-            /* Dash: padding zero (tem padding próprio nos cards) */
-            #painel-dash {
-                padding: 0 !important;
-                background: #f1f5f9;
-            }
-
-            /* Lista: sem bordas laterais */
+            /* Sidebar de listas — largura total no mobile */
             #sidebar-listas {
-                border-right: none !important;
-                border-bottom: none !important;
+                width: 100% !important;
                 min-width: 0 !important;
-                display: none; /* JS controla via style.display */
+                border-right: none !important;
+                border-bottom: 1px solid #e2e8f0;
+                flex-shrink: 0;
+                max-height: 45vh;
+            }
+            /* container flex principal do app vira coluna scrollável */
+            #main-app > div.flex.flex-col > div.flex.flex-1 {
+                flex-direction: column;
+                overflow-y: auto;
             }
 
-            /* Painel de edição */
-            #painel-rolagem {
-                padding: 16px !important;
-                padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px) !important;
-                background: #f1f5f9;
-            }
+            /* Painel principal */
+            #painel-rolagem { padding: 16px !important; }
+            #painel-dash { padding: 0 !important; overflow-y: auto !important; }
 
-            /* Padding inferior no dash também */
-            #painel-dash {
+            /* Padding inferior para bottom nav */
+            #painel-rolagem, #painel-dash {
                 padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px) !important;
             }
 
@@ -297,22 +273,37 @@
                 margin: 0 auto;
             }
 
-            /* Botão salvar — acima do bottom nav */
+            /* Botão salvar — repositionado acima do bottom nav */
             #btn-salvar-geral {
                 bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px) !important;
                 right: 16px !important;
                 padding: 12px 20px !important;
                 font-size: 11px !important;
             }
-
-            /* Sync badge acima do bottom nav */
-            #sync-status {
-                bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 8px) !important;
-            }
         }
 
         /* ── MOBILE ONLY (< 768px) ─────────────── */
         @media (max-width: 767px) {
+
+            /* Painel com as duas seções empilhadas */
+            #main-app > div > div.flex.flex-1 {
+                flex-direction: column !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+
+            /* Lista lateral fica colapsável */
+            #sidebar-listas {
+                max-height: 220px;
+                transition: max-height 0.3s ease;
+            }
+            #sidebar-listas.collapsed-mobile { max-height: 44px; overflow: hidden; }
+
+            /* Dashboard KPIs em 2 colunas no mobile */
+            .dash-kpi-grid-mobile {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
             /* Detalhes da demanda — título menor */
             #painel-rolagem .text-3xl { font-size: 1.25rem !important; }
             #painel-rolagem .max-w-5xl { max-width: 100% !important; }
@@ -324,6 +315,7 @@
                 width: 100%;
                 justify-content: space-between;
             }
+
             /* Report toolbar no mobile */
             #report-toolbar {
                 top: auto !important;
@@ -332,32 +324,18 @@
                 left: 16px !important;
                 justify-content: center;
             }
-            .auth-box { padding: 32px 20px; }
         }
 
         /* ── TABLET (768px – 1023px) ───────────── */
         @media (min-width: 768px) and (max-width: 1023px) {
-            /* No tablet, lista e edição ficam lado a lado normalmente */
-            #main-app > div.flex.flex-col > div.flex.flex-1 {
-                display: flex !important;
+            #main-app > div > div.flex.flex-1 {
                 flex-direction: row !important;
             }
             #sidebar-listas {
-                position: relative !important;
-                inset: auto !important;
                 width: 260px !important;
-                height: 100% !important;
                 max-height: none !important;
                 border-right: 1px solid #e2e8f0 !important;
                 border-bottom: none !important;
-                display: flex !important;
-            }
-            #painel-rolagem, #painel-dash {
-                position: relative !important;
-                inset: auto !important;
-                flex: 1 !important;
-                width: auto !important;
-                height: 100% !important;
             }
         }
 
@@ -411,8 +389,6 @@
             box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-            max-height: 80vh;
-            overflow-y: auto;
         }
         #filter-sheet.open {
             display: block;
@@ -513,7 +489,7 @@
 
                 <!-- LOGIN -->
                 <div id="auth-login">
-                    <div class="auth-page-title">Olá, bem-vindo(a)!</div>
+                    <div class="auth-page-title">Olá, bem-vindo(a) !</div>
                     <div class="auth-page-sub">Acesse o sistema com suas credenciais</div>
                     <div id="login-err" class="auth-err"></div>
                     <div class="auth-field">
@@ -740,7 +716,7 @@
             </header>
             <div class="flex flex-1 overflow-hidden">
                 <aside id="sidebar-listas" class="w-80 border-r bg-white flex flex-col no-print">
-                    <div class="overflow-y-auto flex-1" id="sidebar-listas-scroll">
+                    <div class="overflow-y-auto flex-1">
                         <div class="p-3 bg-slate-50 text-[10px] font-black border-b flex justify-between items-center text-slate-400 group/title">
                             <div class="flex items-center gap-2">
                                 <span>TRATATIVAS ATIVAS</span>
@@ -753,13 +729,6 @@
                         <nav id="lista-ativa"></nav>
                         <div class="header-especial-full"><div class="font-normal">ACOMPANHAMENTO ESPECIAL</div><span id="count-especial" class="font-normal text-[10px]">0/0</span></div>
                         <nav id="lista-especial" class="min-h-[100px]"></nav>
-                        <!-- Botão voltar ao topo — visível só no mobile quando necessário -->
-                        <div id="btn-topo-lista" style="display:none;justify-content:center;padding:16px 16px calc(var(--bottom-nav-h) + var(--safe-bottom, 0px) + 24px);">
-                            <button onclick="document.getElementById('sidebar-listas').scrollTop=0"
-                                style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;">
-                                <i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo
-                            </button>
-                        </div>
                     </div>
                 </aside>
                 <main id="painel-rolagem" class="flex-1 p-8"></main>
@@ -828,7 +797,7 @@
     // ─────────────────────────────────────────────
     // STORAGE SERVICE — agora usando Firestore
     // ─────────────────────────────────────────────
-    window.StorageService = {
+    const StorageService = {
         _db: null,
         _lib: null,
 
@@ -902,7 +871,7 @@
     // ─────────────────────────────────────────────
     // SYNC STATUS BADGE
     // ─────────────────────────────────────────────
-    window.SyncUI = {
+    const SyncUI = {
         _timer: null,
         show(msg, state = 'ok') {
             const el = document.getElementById('sync-status');
@@ -919,7 +888,7 @@
     // ─────────────────────────────────────────────
     // APP ENGINE
     // ─────────────────────────────────────────────
-    window.AppEngine = {
+    const AppEngine = {
         db: [],
         config: {},
         itemAtivoId: null,
@@ -1046,7 +1015,7 @@
     // ─────────────────────────────────────────────
     // DASH ENGINE
     // ─────────────────────────────────────────────
-    window.DashEngine = {
+    const DashEngine = {
         abrir() {
             document.getElementById('report-toolbar').style.display = 'none';
             document.getElementById('topo-app').classList.remove('hidden');
@@ -1193,7 +1162,7 @@
     // ─────────────────────────────────────────────
     // NAVIGATION
     // ─────────────────────────────────────────────
-    window.Navigation = {
+    const Navigation = {
         toggleSidebar() { document.getElementById('sidebar-infra').classList.toggle('collapsed'); lucide.createIcons(); },
         toggleSubmenu(id) {
             const s = document.getElementById('sidebar-infra'); if (s.classList.contains('collapsed')) s.classList.remove('collapsed');
@@ -1213,7 +1182,7 @@
             return AuthLayer.sair();
         },
         async _confirmarSaidaOriginal() {
-            if (!confirm('SGD - Sistema de Gestão de Demandas\n\nDeseja sair do sistema?\nTodas as alterações serão salvas.')) return;
+            if (!confirm('Deseja sair do sistema?\nTodas as alterações serão salvas.')) return;
             SyncUI.show('Salvando...', 'syncing');
             try {
                 if (AppEngine.itemAtivoId) await new Promise(r => { AppEngine.salvarAlteracoesPagina(); setTimeout(r, 600); });
@@ -1235,7 +1204,7 @@
     // ─────────────────────────────────────────────
     // RENDER ENGINE
     // ─────────────────────────────────────────────
-    window.RenderEngine = {
+    const RenderEngine = {
         renderListas() {
             const busca = document.getElementById('busca-rapida').value.toLowerCase();
             const status = document.getElementById('filter-status').value;
@@ -1262,7 +1231,7 @@
                 const div = document.createElement('div');
                 div.className = `p-4 border-b flex justify-between items-center cursor-pointer hover:bg-slate-50 item-sidebar-container ${AppEngine.itemAtivoId === p.id ? 'item-active' : ''}`;
                 div.setAttribute('data-id', p.id); div.onclick = () => { DashEngine.fechar(); this.abrirDetalhes(p.id); };
-                div.innerHTML = `<div class="flex items-center gap-2"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div class="text-[11px] uppercase text-slate-700">${p.nome}</div></div><div class="flex items-center gap-3"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
+                div.innerHTML = `<div class="flex items-center gap-2"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-3 h-3"></i></div><div class="text-[11px] uppercase text-slate-700">${p.nome}</div></div><div class="flex items-center gap-3"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
                 container.appendChild(div);
             });
             Sortable.create(container, { group: 'sidebar', animation: 150, handle: '.handle', onEnd: async (e) => {
@@ -1283,13 +1252,7 @@
             this.renderListas();
             const painel = document.getElementById('painel-rolagem');
             document.getElementById('btn-salvar-geral').classList.remove('hidden');
-            painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding-bottom:80px"><div class="flex justify-between items-start mb-6 border-b pb-6" style="flex-wrap:wrap;gap:12px;"><div><h2 contenteditable="true" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2><p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg}</p></div><div class="flex gap-2"><select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" class="p-2 border rounded font-normal text-[10px] bg-white"><option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option><option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option><option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option><option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option><option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option></select><button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="secao-card"><div class="secao-header"><span>Contexto</span></div><div contenteditable="true" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div></div><div class="secao-card"><div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div id="logs-container" class="p-4 space-y-3"></div><div id="input-log-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div><div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div><div class="secao-card"><div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div class="p-4"><ul id="prioridades-sort" class="space-y-2">${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div contenteditable="true" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space: pre-wrap; word-break: break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}</ul></div><div id="input-pendencia-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div><div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div></div>
-            <div id="btn-topo-edicao" style="display:none;justify-content:center;padding:16px 16px calc(var(--bottom-nav-h, 0px) + var(--safe-bottom, 0px) + 24px);">
-                <button onclick="document.getElementById('painel-rolagem').scrollTop=0"
-                    style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;">
-                    <i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo
-                </button>
-            </div>`;
+            painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding-bottom:80px"><div class="flex justify-between items-start mb-6 border-b pb-6" style="flex-wrap:wrap;gap:12px;"><div><h2 contenteditable="true" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2><p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg}</p></div><div class="flex gap-2"><select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" class="p-2 border rounded font-normal text-[10px] bg-white"><option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option><option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option><option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option><option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option><option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option></select><button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div><div class="secao-card"><div class="secao-header"><span>Contexto</span></div><div contenteditable="true" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div></div><div class="secao-card"><div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div id="logs-container" class="p-4 space-y-3"></div><div id="input-log-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div><div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div><div class="secao-card"><div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div><div class="p-4"><ul id="prioridades-sort" class="space-y-2">${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div><div contenteditable="true" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space: pre-wrap; word-break: break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}</ul></div><div id="input-pendencia-area" class="hidden p-4 border-t bg-white"><div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div><div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div></div></div></div>`;
             await this.updateLogUI(id);
             // (g) Enter no título da demanda dispara salvar
             document.getElementById('edit-nome').addEventListener('keydown', function(e) {
@@ -1302,13 +1265,9 @@
                 SyncUI.show('Salvo', 'ok');
             }});
             lucide.createIcons();
-            // Mostra botão de topo só se conteúdo ultrapassa a tela
-            requestAnimationFrame(() => {
-                const pr = document.getElementById('painel-rolagem');
-                const btn = document.getElementById('btn-topo-edicao');
-                if (btn && pr.scrollHeight > pr.clientHeight) btn.style.display = 'flex';
-            });
         },
+
+        async updateLogUI(id) {
             const logs = await StorageService.getLogs(id);
             document.getElementById('logs-container').innerHTML = [...logs].reverse().map((l, i) => {
                 const idx = logs.length - 1 - i;
@@ -1557,8 +1516,20 @@
         }
     };
 
+    // ─────────────────────────────────────────────
+    // INICIALIZAÇÃO — aguarda o Firebase estar pronto
+    // ─────────────────────────────────────────────
+    function startApp() {
+        StorageService.init(window._firestore, window._firestoreLib);
+        AppEngine.init().catch(err => {
+            console.error(err);
+            document.querySelector('#loading-screen p').textContent = 'Erro ao conectar. Verifique as regras do Firestore.';
+            SyncUI.show('Erro de conexão', 'error');
+        });
+    }
+
     // ── AUTH LAYER ────────────────────────────────────────────────
-    window.AuthLayer = {
+    const AuthLayer = {
         _msgs: {
             'auth/user-not-found':'Usuário não encontrado.',
             'auth/wrong-password':'Senha incorreta.',
@@ -1601,9 +1572,7 @@
             try {
                 const { signInWithEmailAndPassword } = window._authLib;
                 await signInWithEmailAndPassword(window._auth, email, senha);
-                // Chama diretamente — não depende só do onAuthStateChanged no mobile
-                document.getElementById('auth-overlay').classList.add('hidden');
-                startApp();
+                // onAuthStateChanged cuida do restante
             } catch(err){
                 errEl.textContent = this._msg(err);
                 errEl.classList.add('on');
@@ -1631,11 +1600,7 @@
                 await setDoc(doc(window._firestore, 'usuarios', cred.user.uid), { nome, email, area, uid: cred.user.uid, criadoEm: new Date().toISOString() });
                 okEl.textContent = 'Conta criada! Entrando...';
                 okEl.classList.add('on');
-                // Chama diretamente — não depende só do onAuthStateChanged no mobile
-                setTimeout(() => {
-                    document.getElementById('auth-overlay').classList.add('hidden');
-                    startApp();
-                }, 800);
+                // onAuthStateChanged vai disparar o startApp automaticamente
             } catch(err){
                 errEl.textContent = this._msg(err);
                 errEl.classList.add('on');
@@ -1643,7 +1608,7 @@
             }
         },
         async sair(){
-            if(!confirm('SGD - Sistema de Gestão de Demandas\n\nDeseja realmente sair?')) return;
+            if(!confirm('Deseja realmente sair?')) return;
             const { signOut } = window._authLib;
             await signOut(window._auth);
             location.reload();
@@ -1655,25 +1620,15 @@
     window._authLayerSair = () => AuthLayer.sair();
 
     // ── INICIALIZAÇÃO COM AUTH ────────────────────────────────────
-    let _appStarted = false;
-    window.startApp = function startApp() {
-        if (_appStarted) return;
-        _appStarted = true;
-        StorageService.init(window._firestore, window._firestoreLib);
-        AppEngine.init().catch(err => {
-            console.error(err);
-            document.querySelector('#loading-screen p').textContent = 'Erro ao conectar. Verifique as regras do Firestore.';
-            SyncUI.show('Erro de conexão', 'error');
-        });
-    }
-
     function bootWithAuth() {
         const { onAuthStateChanged } = window._authLib;
         onAuthStateChanged(window._auth, (user) => {
             if (user) {
+                // Usuário autenticado: esconde overlay e inicia app
                 document.getElementById('auth-overlay').classList.add('hidden');
                 startApp();
             } else {
+                // Não autenticado: mostra overlay, esconde loading
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('auth-overlay').classList.remove('hidden');
             }
@@ -1701,7 +1656,7 @@
     // ═══════════════════════════════════════════════════════════════
     // MOBILE UI v3 — comportamento direto e sem ambiguidade
     // ═══════════════════════════════════════════════════════════════
-    window.MobileUI = {
+    const MobileUI = {
         _view: 'dash',
 
         isMobile() { return window.innerWidth < 1024; },
@@ -1715,18 +1670,20 @@
         _showLista() {
             document.getElementById('painel-dash').style.display    = 'none';
             document.getElementById('painel-rolagem').style.display = 'none';
-            document.getElementById('sidebar-listas').style.display = 'block';
-            // Mostra botão voltar ao topo só se conteúdo ultrapassa a tela
-            requestAnimationFrame(() => {
-                const sl = document.getElementById('sidebar-listas');
-                const btn = document.getElementById('btn-topo-lista');
-                if (btn) btn.style.display = sl.scrollHeight > sl.clientHeight ? 'flex' : 'none';
-                lucide.createIcons();
-            });
+            const sl = document.getElementById('sidebar-listas');
+            sl.style.display      = 'flex';
+            sl.style.width        = '100%';
+            sl.style.maxHeight    = 'none';
+            sl.style.height       = '100%';
+            sl.style.flex         = '1';
+            sl.style.overflowY    = 'auto';
+            sl.style.borderRight  = 'none';
+            sl.style.borderBottom = 'none';
         },
         _showEdicao() {
             document.getElementById('painel-dash').style.display    = 'none';
-            document.getElementById('painel-rolagem').style.display = 'block';
+            document.getElementById('painel-rolagem').style.display = '';
+            document.getElementById('painel-rolagem').style.overflow = 'auto';
             document.getElementById('sidebar-listas').style.display = 'none';
         },
 
@@ -1828,43 +1785,17 @@
 
             if (!this.isMobile()) return;
 
-            // Fecha filter sheet ao rolar qualquer painel — usa captura no window
-            const _self = this;
-            window.addEventListener('scroll', () => {
-                if (document.getElementById('filter-sheet').classList.contains('open')) {
-                    _self.closeFilterSheet();
-                }
-            }, { passive: true, capture: true });
-            // Também monitora scroll nos painéis com overflow
-            ['painel-dash', 'painel-rolagem', 'sidebar-listas-scroll'].forEach(elId => {
-                const el = document.getElementById(elId);
-                if (el) el.addEventListener('scroll', () => {
-                    if (document.getElementById('filter-sheet').classList.contains('open')) {
-                        _self.closeFilterSheet();
-                    }
-                }, { passive: true });
-            });
-
-            // Swipe down no filter sheet fecha ele (só se estiver no topo do scroll)
+            // Swipe down no filter sheet fecha ele
             const sheet = document.getElementById('filter-sheet');
-            let _sy = 0, _sx = 0, _scrollTop = 0;
+            let _sy = 0, _sx = 0;
             sheet.addEventListener('touchstart', e => {
                 _sy = e.touches[0].clientY;
                 _sx = e.touches[0].clientX;
-                _scrollTop = sheet.scrollTop;
             }, { passive: true });
-            sheet.addEventListener('touchmove', e => {
-                const dy = e.touches[0].clientY - _sy;
-                // Se arrastando pra baixo E sheet está no topo, previne scroll e fecha
-                if (dy > 0 && _scrollTop <= 0) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
             sheet.addEventListener('touchend', e => {
                 const dy = e.changedTouches[0].clientY - _sy;
                 const dx = Math.abs(e.changedTouches[0].clientX - _sx);
-                // Fecha se arrastar pra baixo mais de 60px e estava no topo do scroll
-                if (dy > 60 && dx < dy && _scrollTop <= 0) this.closeFilterSheet();
+                if (dy > 50 && dy > dx) this.closeFilterSheet();
             }, { passive: true });
 
             // Fecha drawer ao clicar em nav items
@@ -1932,10 +1863,10 @@
         const periodo   = AppEngine.config.periodo   || '';
 
         const kpis = [
-            { label:'Total',          valor: total,                                          cor:'#1abc9c', borda:'#1abc9c' },
-            { label:'Em Tratamento',  valor: cont.andamento + cont.pendente + cont.urgente,  cor:'#3b82f6', borda:'#3b82f6' },
-            { label:'Aguardando',     valor: cont.aguardando,                                cor:'#94a3b8', borda:'#94a3b8' },
-            { label:'Concluídas',     valor: cont.concluido,                                 cor:'#10b981', borda:'#10b981' },
+            { label:'Total',        valor: total,                                          cor:'#1abc9c', borda:'#1abc9c' },
+            { label:'Em Andamento', valor: cont.andamento + cont.pendente + cont.urgente,  cor:'#3b82f6', borda:'#3b82f6' },
+            { label:'Aguardando',   valor: cont.aguardando,                                cor:'#94a3b8', borda:'#94a3b8' },
+            { label:'Concluídas',   valor: cont.concluido,                                 cor:'#10b981', borda:'#10b981' },
         ];
 
         const Rv=110, CXv=130, CYv=130, Cv=2*Math.PI*Rv;
@@ -1951,31 +1882,32 @@
         const urgentes     = db.filter(i => i.status === 'urgente');
         const prioritarias = STATUS_ORDER.filter(s => s !== 'urgente').flatMap(s => db.filter(i => i.status === s));
 
+        // Clique no item abre edição DIRETA — sem passar pela lista
         const rowItem = (i) =>
             `<div onclick="MobileUI.abrirEdicaoDoDash('${i.id}')"
                   style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;-webkit-tap-highlight-color:transparent;">
                 <span style="width:9px;height:9px;border-radius:50%;background:${STATUS_COLOR[i.status]};flex-shrink:0;"></span>
-                <span style="font-size:13px;color:#1e293b;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${i.nome}</span>
-                <span style="font-size:11px;color:${STATUS_COLOR[i.status]};font-weight:700;flex-shrink:0;">${STATUS_LABEL[i.status]}</span>
+                <span style="font-size:12px;color:#1e293b;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${i.nome}</span>
+                <span style="font-size:10px;color:${STATUS_COLOR[i.status]};font-weight:700;flex-shrink:0;">${STATUS_LABEL[i.status]}</span>
             </div>`;
 
         painel.innerHTML =
             `<div style="padding:16px 16px 8px;">
-                <div style="font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#64748b;">ANALYTICS DE PERFORMANCE</div>
-                <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">${subtitulo}${semana?' · '+semana:''}${periodo?' · '+periodo:''}</div>
+                <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#64748b;">ANALYTICS DE PERFORMANCE</div>
+                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">${subtitulo}${semana?' · '+semana:''}${periodo?' · '+periodo:''}</div>
             </div>` +
 
             `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px;">
                 ${kpis.map(k =>
                     `<div style="background:white;border-radius:10px;border:1px solid #e2e8f0;border-top:3px solid ${k.borda};padding:12px 14px;">
-                        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;">${k.label}</div>
+                        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;">${k.label}</div>
                         <div style="font-size:2rem;font-weight:300;color:${k.cor};line-height:1.1;margin-top:4px;">${k.valor}</div>
                     </div>`
                 ).join('')}
             </div>` +
 
             `<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;margin:0 16px 16px;padding:16px 12px 12px;">
-                <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:12px;">Distribuição de Status</div>
+                <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:12px;">Distribuição de Status</div>
                 <div style="display:flex;align-items:center;gap:16px;">
                     <svg viewBox="0 0 260 260" style="width:130px;height:130px;flex-shrink:0;transform:rotate(-90deg);">${arcs}
                         <text x="${CXv}" y="${CYv}" text-anchor="middle" dominant-baseline="middle" font-size="36" font-weight="300" fill="#334155" transform="rotate(90,${CXv},${CYv})">${total}</text>
@@ -1985,8 +1917,8 @@
                             `<div onclick="DashEngine.filtrarEAbrir('${s}')"
                                   style="display:flex;align-items:center;gap:7px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
                                 <span style="width:9px;height:9px;border-radius:50%;background:${s==='aguardando'?'#e2e8f0':STATUS_COLOR[s]};${s==='aguardando'?'border:1px solid #cbd5e1;':''}flex-shrink:0;"></span>
-                                <span style="font-weight:700;font-size:11px;text-transform:uppercase;color:#64748b;">${STATUS_LABEL[s]}</span>
-                                <span style="margin-left:auto;font-weight:700;color:#1e293b;font-size:12px;">${cont[s]}</span>
+                                <span style="font-weight:700;font-size:9px;text-transform:uppercase;color:#64748b;">${STATUS_LABEL[s]}</span>
+                                <span style="margin-left:auto;font-weight:700;color:#1e293b;font-size:11px;">${cont[s]}</span>
                             </div>`
                         ).join('')}
                     </div>
@@ -1994,20 +1926,20 @@
             </div>` +
 
             `<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;margin:0 16px 16px;overflow:hidden;">
-                <div style="padding:12px 16px 8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;">
-                    ⚠️ Próximas Ações em Andamento (${urgentes.length})
+                <div style="padding:12px 16px 8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;">
+                    ⚠️ Próximas Ações Recomendadas (${urgentes.length})
                 </div>
-                ${urgentes.length ? urgentes.map(rowItem).join('') : '<p style="font-size:13px;color:#94a3b8;padding:14px 16px;">Nenhuma demanda urgente.</p>'}
+                ${urgentes.length ? urgentes.map(rowItem).join('') : '<p style="font-size:12px;color:#94a3b8;padding:14px 16px;">Nenhuma demanda urgente.</p>'}
             </div>` +
 
             `<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;margin:0 16px 16px;overflow:hidden;">
-                <div style="padding:12px 16px 8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;">
+                <div style="padding:12px 16px 8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;">
                     📋 Demandas Prioritárias (${prioritarias.length})
                 </div>
-                ${prioritarias.length ? prioritarias.map(rowItem).join('') : '<p style="font-size:13px;color:#94a3b8;padding:14px 16px;">Nenhuma demanda.</p>'}
+                ${prioritarias.length ? prioritarias.map(rowItem).join('') : '<p style="font-size:12px;color:#94a3b8;padding:14px 16px;">Nenhuma demanda.</p>'}
             </div>` +
 
-            `<div id="btn-topo-dash" style="display:none;justify-content:center;padding:8px 16px calc(var(--bottom-nav-h) + var(--safe-bottom, 0px) + 24px);">
+            `<div style="display:flex;justify-content:center;padding:8px 16px calc(var(--bottom-nav-h) + var(--safe-bottom, 0px) + 24px);">
                 <button onclick="document.getElementById('painel-dash').scrollTop=0"
                     style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;">
                     <i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo
@@ -2015,14 +1947,7 @@
             </div>`;
 
         lucide.createIcons();
-
-        // Mostra botão de topo só se o conteúdo é maior que a tela
-        requestAnimationFrame(() => {
-            const btn = document.getElementById('btn-topo-dash');
-            if (btn && painel.scrollHeight > painel.clientHeight) {
-                btn.style.display = 'flex';
-            }
-        });
+    };
 
     // 6. AppEngine.init → inicializa MobileUI depois do app carregar
     const _origAppInit = AppEngine.init.bind(AppEngine);
