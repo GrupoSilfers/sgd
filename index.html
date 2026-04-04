@@ -634,7 +634,12 @@
                 if (AppEngine.itemAtivoId) await new Promise(r => { AppEngine.salvarAlteracoesPagina(); setTimeout(r, 600); });
                 await StorageService.setData(AppEngine.db);
                 SyncUI.show('Salvo. Saindo...', 'ok');
-                setTimeout(() => window.close() || (document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#64748b;font-size:14px;">Sessão encerrada. Pode fechar esta aba.</div>'), 800);
+                setTimeout(() => {
+                    // Tenta fechar a aba (funciona se for um app instalado/PWA ou popup)
+                    window.close();
+                    // Se o navegador bloquear o fechamento, joga o usuário para fora (tela de login)
+                    window.location.href = "login_final.html"; 
+                }, 800);
             } catch(e) { SyncUI.show('Erro ao salvar', 'error'); }
         },
         voltarParaApp() {
