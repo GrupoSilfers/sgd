@@ -510,7 +510,7 @@
 
                 <!-- LOGIN -->
                 <div id="auth-login">
-                    <div class="auth-page-title">Bem-vindo......</div>
+                    <div class="auth-page-title">Olá, bem-vindo(a) !</div>
                     <div class="auth-page-sub">Acesse o sistema com suas credenciais</div>
                     <div id="login-err" class="auth-err"></div>
                     <div class="auth-field">
@@ -1228,12 +1228,25 @@
             } catch(e) { SyncUI.show('Erro ao salvar', 'error'); }
         },
         voltarParaApp() {
+            // Esconde toolbar do relatório
             document.getElementById('report-toolbar').style.display = 'none';
+            // Limpa conteúdo do relatório
+            document.getElementById('painel-rolagem').innerHTML = '';
+            document.getElementById('painel-rolagem').style.display = 'none';
+            // Restaura header
             document.getElementById('topo-app').classList.remove('hidden');
-            document.getElementById('sidebar-listas').classList.remove('hidden');
-            document.getElementById('painel-dash').style.display = 'none';
-            document.getElementById('painel-rolagem').style.display = '';
-            if (AppEngine.itemAtivoId) RenderEngine.abrirDetalhes(AppEngine.itemAtivoId);
+            // Botão salvar oculto até abrir uma demanda
+            document.getElementById('btn-salvar-geral').classList.add('hidden');
+            AppEngine.itemAtivoId = null;
+            // No mobile: vai para o dash
+            if (typeof MobileUI !== 'undefined' && MobileUI.isMobile()) {
+                MobileUI.navDash();
+            } else {
+                // Desktop: mostra lista + dash
+                document.getElementById('sidebar-listas').style.display = '';
+                DashEngine.abrir();
+                RenderEngine.renderListas();
+            }
         }
     };
 
@@ -1448,75 +1461,42 @@
         async renderizarSimplificado() {
             const painel = document.getElementById('painel-rolagem');
 
-            // a) Limpa TUDO — esconde lista, dash, painel de edição, header
+            // Limpa TUDO — esconde lista, dash, painel de edição, header
             document.getElementById('sidebar-listas').style.display = 'none';
             document.getElementById('painel-dash').style.display = 'none';
             document.getElementById('topo-app').classList.add('hidden');
             document.getElementById('btn-salvar-geral').classList.add('hidden');
             document.getElementById('report-toolbar').style.display = 'flex';
             painel.style.display = 'block';
+            painel.innerHTML = '';
 
-            // c) Mensagem de aguarde enquanto prepara
+            // Mensagem de aguarde enquanto prepara
             painel.innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;">
                     <div style="width:36px;height:36px;border:3px solid rgba(26,188,156,.2);border-top-color:#1abc9c;border-radius:50%;animation:spin .8s linear infinite;"></div>
                     <p style="font-family:Arial,sans-serif;font-size:14px;color:#64748b;letter-spacing:.03em;">Aguarde... o relatório está sendo preparado</p>
                 </div>`;
-
-            // Dá um frame para renderizar a mensagem antes de processar
             await new Promise(r => setTimeout(r, 50));
 
             const filtroAtual = document.getElementById('filter-status').value;
             let itensFiltrados = AppEngine.db.filter(i => i.imprimirItem !== false);
             if (filtroAtual !== 'todos') itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
-
-            // e) Layout do relatório corrigido — margens A4, fonte consistente, espaçamento limpo
-            const cabecalhoHTML = `
-                <div style="font-family:Arial,sans-serif;font-size:10pt;font-weight:bold;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:12px;text-transform:uppercase;">
-                    ${AppEngine.config.subtitulo} - RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana} | PERÍODO: ${AppEngine.config.periodo}
-                </div>`;
-
-            let htmlPaginas = '';
-            let bufferItens = [];
-
+            let htmlPaginas = "";
+            let cabecalho = `<div style="margin:0;padding:0;font-weight:bold;border-bottom:2px solid #000;">${AppEngine.config.subtitulo.toUpperCase()} - RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana.toUpperCase()} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}</div>`;
+            let bufferTexto = cabecalho;
             for (const [index, item] of itensFiltrados.entries()) {
                 const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
-
-                const itemHTML =
-                    `<div style="margin-bottom:14px;page-break-inside:avoid;">` +
-                    `<div style="font-family:Arial,sans-serif;font-size:10pt;font-weight:bold;margin-bottom:4px;">&gt;&gt;&gt; ${index + 1}. ${item.nome.toUpperCase()}</div>` +
-                    `<div style="font-family:Arial,sans-serif;font-size:9pt;font-weight:bold;color:#333;margin-top:6px;">CONTEXTO:</div>` +
-                    `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#333;white-space:pre-wrap;padding-left:8px;margin-bottom:4px;">${item.processo || 'N/A'}</div>` +
-                    `<div style="font-family:Arial,sans-serif;font-size:9pt;font-weight:bold;color:#333;margin-top:4px;">HISTÓRICO:</div>` +
-                    `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#333;padding-left:8px;margin-bottom:4px;">${
-                        logs.length
-                            ? logs.map(l => `<span style="color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('<br>')
-                            : 'N/A'
-                    }</div>` +
-                    `<div style="font-family:Arial,sans-serif;font-size:9pt;font-weight:bold;color:#333;margin-top:4px;">PENDÊNCIAS:</div>` +
-                    `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#333;padding-left:8px;margin-bottom:6px;">${
-                        item.passos.length ? item.passos.map(p => `• ${p}`).join('<br>') : 'Nenhuma.'
-                    }</div>` +
-                    `<div style="border-top:1px dashed #ccc;margin-top:8px;"></div>` +
-                    `</div>`;
-
-                bufferItens.push(itemHTML);
-
-                // Quebra de página a cada 3 itens
+                let demandaTexto = `\n<strong>>>> ${index + 1}. ${item.nome.toUpperCase()}</strong>\n\n`;
+                demandaTexto += `CONTEXTO:\n${item.processo || 'N/A'}\n\n`;
+                demandaTexto += `HISTÓRICO:\n${logs.length ? logs.map(l => `<span style="font-size: 8.5pt; color: #1abc9c; font-weight: bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n') : 'N/A'}\n\n`;
+                demandaTexto += `PENDÊNCIAS:\n${item.passos.length ? item.passos.map(p => `• ${p}`).join('\n') : 'Nenhuma.'}\n\n`;
+                demandaTexto += `############################################################################################\n`;
+                bufferTexto += demandaTexto;
                 if ((index + 1) % 3 === 0 || (index + 1) === itensFiltrados.length) {
-                    htmlPaginas += `
-                        <div class="folha-a4 doc-body" style="padding:15mm 20mm;font-family:Arial,sans-serif;font-size:9pt;line-height:1.4;">
-                            ${cabecalhoHTML}
-                            ${bufferItens.join('')}
-                        </div>`;
-                    bufferItens = [];
+                    htmlPaginas += `<div class="folha-a4 doc-body" style="min-height:297mm; white-space: pre-wrap; padding: 15mm;">${bufferTexto}</div>`;
+                    bufferTexto = cabecalho;
                 }
             }
-
-            if (!htmlPaginas) {
-                htmlPaginas = `<div style="text-align:center;padding:60px;font-family:Arial,sans-serif;color:#94a3b8;">Nenhuma demanda para exibir.</div>`;
-            }
-
             painel.innerHTML = htmlPaginas;
         },
 
