@@ -1599,10 +1599,36 @@
 
                 corpo += '</div>';
                 const htmlCompleto = `<html><head><meta charset="UTF-8">${estiloWord}</head><body>${corpo}</body></html>`;
-                const blob = new Blob([htmlCompleto], { type: 'text/html' });
-                await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]);
-                alert("Copiado com sucesso!");
-            } catch (err) { alert("Erro ao copiar."); }
+                // Tenta copiar HTML rico (compatível com Word)
+                const htmlBlob = new Blob([htmlCompleto], { type: 'text/html' });
+
+                // Método 1: ClipboardItem API (suporte amplo em navegadores modernos)
+                if (navigator.clipboard && window.ClipboardItem) {
+                    try {
+                        await navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob })]);
+                        alert("Copiado com sucesso! Cole no Word (Ctrl+V).");
+                        return;
+                    } catch (clipErr) {
+                        // Cai para método 2
+                    }
+                }
+
+                // Método 2: execCommand (fallback para contextos sem permissão de clipboard)
+                const tempDiv = document.createElement('div');
+                tempDiv.setAttribute('contenteditable', 'true');
+                tempDiv.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+                tempDiv.innerHTML = htmlCompleto;
+                document.body.appendChild(tempDiv);
+                tempDiv.focus();
+                document.execCommand('selectAll');
+                const ok = document.execCommand('copy');
+                document.body.removeChild(tempDiv);
+                if (ok) {
+                    alert("Copiado com sucesso! Cole no Word (Ctrl+V).");
+                } else {
+                    alert("Não foi possível copiar automaticamente.\n\nSelecione o conteúdo do relatório na tela e copie manualmente (Ctrl+C).");
+                }
+            } catch (err) { alert("Erro ao copiar: " + (err.message || err)); }
         }
     };
 
@@ -1748,9 +1774,48 @@
     }
 
     document.getElementById('btn-pdf-trigger').onclick = () => {
-        const element = document.getElementById('painel-rolagem');
-        const opt = { margin: [10, 10, 10, 10], filename: 'Relatorio.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-        html2pdf().set(opt).from(element).save();
+        // Clona apenas o conteúdo do relatório em um container isolado
+        const painel = document.getElementById('painel-rolagem');
+
+        // Cria container temporário fora do fluxo do layout
+        const container = document.createElement('div');
+        container.style.cssText = `
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 210mm;
+            background: white;
+            z-index: -1;
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            color: #333;
+        `;
+
+        // Copia os estilos do doc-body e folha-a4
+        const clone = painel.cloneNode(true);
+        clone.style.cssText = `
+            width: 210mm;
+            background: white;
+            overflow: visible;
+            height: auto;
+            position: static;
+        `;
+        container.appendChild(clone);
+        document.body.appendChild(container);
+
+        const opt = {
+            margin:     [15, 15, 15, 15],
+            filename:   'Relatorio_Simplificado.pdf',
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+            jsPDF:      { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(container).save().then(() => {
+            document.body.removeChild(container);
+        }).catch(() => {
+            document.body.removeChild(container);
+            alert('Erro ao gerar PDF. Tente novamente.');
+        });
     };
 
     window.addEventListener('keydown', e => { if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); AppEngine.salvarAlteracoesPagina(); } });
