@@ -120,11 +120,11 @@
         /* AUTH OVERLAY */
         #auth-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; font-family: 'Montserrat', sans-serif; }
         #auth-overlay.hidden { display: none; }
-        .auth-panel-img { flex: 5; background-image: url('sgd_tlog1.png'); background-size: cover; background-position: center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:40px; }
-        .auth-panel-img-logo { font-size:48px; font-weight:800; color:white; letter-spacing:.06em; }
-        .auth-panel-img-sub { font-size:13px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:.12em; text-align:center; }
-        .auth-panel-img-tagline { font-size:15px; color:rgba(255,255,255,0.85); text-align:center; font-weight:500; margin-top:16px; max-width:260px; line-height:1.5; }
-        .auth-panel-form { flex: 6; background: #fff; display: flex; align-items: center; justify-content: center; overflow-y: auto; }
+        .auth-panel-img { flex: 5.5; background-image: url('sgd_tlog1.JPG'); background-size: cover; background-position: center; }
+        .auth-panel-img-logo { display:none; }
+        .auth-panel-img-sub { display:none; }
+        .auth-panel-img-tagline { display:none; }
+        .auth-panel-form { flex: 4.5; background: #fff; display: flex; align-items: center; justify-content: center; overflow-y: auto; }
         .auth-box { width: 360px; padding: 40px 20px; }
         .auth-logo { text-align:left; margin-bottom:32px; padding-left: 46px; }
         .auth-logo img { width:100%; max-width:220px; height:auto; object-fit:contain; }
@@ -234,9 +234,8 @@
     </div>
     <div class="auth-panel-form">
         <div class="auth-box">
-            <div class="auth-logo">
-                <div style="font-size:22px;font-weight:700;color:#1e293b;letter-spacing:.05em;">SGD</div>
-                <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">Sistema de Gestão de Demandas</div>
+            <div class="auth-logo" style="text-align:center; padding-left:0; margin-bottom:28px; background:white;">
+                <img src="sgd_tlog2.png" alt="SGD" style="max-width:200px; height:auto; display:block; margin:0 auto; mix-blend-mode:multiply;">
             </div>
             <!-- LOGIN -->
             <div id="auth-login">
