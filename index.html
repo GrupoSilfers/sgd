@@ -192,9 +192,11 @@
             #painel-dash .dash-inner { padding: 0.75rem !important; box-sizing: border-box; width: 100%; }
             #painel-dash .dash-inner > * { max-width: 100%; box-sizing: border-box; }
         }
-        #bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; height: var(--bottom-nav-h); z-index: 100; display: none; align-items: center; justify-content: space-around; padding-bottom: var(--safe-bottom); }
+        #bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid #334155; height: var(--bottom-nav-h); z-index: 100; display: none; align-items: center; justify-content: space-around; padding-bottom: var(--safe-bottom); }
         @media (max-width: 1023px) { #bottom-nav { display: flex; } }
-        .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 12px; border: none; background: none; color: #94a3b8; font-size: 10px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: color .2s; min-width: 56px; }
+        @media (max-width: 1023px) { #btn-salvar-geral { bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px) !important; right: 16px !important; } }
+        .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 12px; border: none; background: none; color: #64748b; font-size: 10px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: color .2s; min-width: 56px; }
+        .bnav-item:hover { color: #94a3b8; }
         .bnav-item i { width: 22px; height: 22px; }
         .bnav-item.active { color: #1abc9c; }
         .bnav-center { background: #1abc9c; color: white !important; border-radius: 50%; width: 52px; height: 52px; padding: 0; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(26,188,156,.4); }
@@ -281,10 +283,10 @@
                     <label class="auth-label">E-mail Institucional</label>
                     <div class="auth-input-wrap">
                         <div class="auth-icon"><span class="material-icons" style="font-size:20px;">mail_outline</span></div>
-                        <input type="email" id="cad-email" placeholder="nome@infrasa.gov.br">
+                        <input type="email" id="cad-email" placeholder="nome@infrasa.gov.br" oninput="AuthLayer.toggleAreaField(this.value)">
                     </div>
                 </div>
-                <div class="auth-field">
+                <div class="auth-field" id="cad-area-field" style="display:none;">
                     <label class="auth-label">Área / Lotação</label>
                     <div class="auth-input-wrap">
                         <div class="auth-icon"><span class="material-icons" style="font-size:20px;">business</span></div>
@@ -451,21 +453,21 @@
             </div>
         </div>
         <nav class="flex-1 mt-4">
-            <div onclick="DashEngine.abrir()" class="nav-item" title="Dashboard"><i data-lucide="layout-dashboard" class="w-5 h-5 text-sky-400 mr-3"></i><span class="nav-text text-sm">Dashboard</span></div>
+            <div onclick="DashEngine.abrir();MobileUI.closeDrawer();" class="nav-item" title="Dashboard"><i data-lucide="layout-dashboard" class="w-5 h-5 text-sky-400 mr-3"></i><span class="nav-text text-sm">Dashboard</span></div>
             <div onclick="Navigation.toggleSubmenu('sub-rel')" class="nav-item" title="Relatórios"><i data-lucide="printer" class="w-5 h-5 text-emerald-400 mr-3"></i><span class="nav-text text-sm">Relatórios</span><i data-lucide="chevron-down" class="w-4 h-4 ml-auto chevron-icon"></i></div>
             <div id="sub-rel" class="submenu">
-                <div onclick="RenderEngine.renderizarPadraoExecutivo()" class="nav-subitem">Padrão</div>
-                <div onclick="RenderEngine.renderizarSimplificado()" class="nav-subitem">Simplificado</div>
+                <div onclick="RenderEngine.renderizarPadraoExecutivo();MobileUI.closeDrawer();" class="nav-subitem">Padrão</div>
+                <div onclick="RenderEngine.renderizarSimplificado();MobileUI.closeDrawer();" class="nav-subitem">Simplificado</div>
             </div>
-            <div onclick="AppEngine.exportarBackup()" class="nav-item" title="Exportar Dados"><i data-lucide="download-cloud" class="w-5 h-5 text-amber-400 mr-3"></i><span class="nav-text text-sm">Exportar Dados</span></div>
-            <label class="nav-item cursor-pointer" title="Importar Backup"><i data-lucide="upload-cloud" class="w-5 h-5 text-blue-400 mr-3"></i><span class="nav-text text-sm">Importar Backup</span><input type="file" class="hidden" accept=".json" onchange="AppEngine.importarBackup(event)"></label>
+            <div onclick="AppEngine.exportarBackup();MobileUI.closeDrawer();" class="nav-item" title="Exportar Dados"><i data-lucide="download-cloud" class="w-5 h-5 text-amber-400 mr-3"></i><span class="nav-text text-sm">Exportar Dados</span></div>
+            <label class="nav-item cursor-pointer" title="Importar Backup" onclick="MobileUI.closeDrawer();"><i data-lucide="upload-cloud" class="w-5 h-5 text-blue-400 mr-3"></i><span class="nav-text text-sm">Importar Backup</span><input type="file" class="hidden" accept=".json" onchange="AppEngine.importarBackup(event)"></label>
             <div id="nav-admin-item" class="hidden">
-                <div onclick="AdminEngine.abrir()" class="nav-item nav-item-admin" title="Painel Admin"><i data-lucide="shield" class="w-5 h-5 mr-3" style="color:#a78bfa;"></i><span class="nav-text text-sm" style="color:#a78bfa;">Painel Admin</span></div>
+                <div onclick="AdminEngine.abrir();MobileUI.closeDrawer();" class="nav-item nav-item-admin" title="Painel Admin"><i data-lucide="shield" class="w-5 h-5 mr-3" style="color:#a78bfa;"></i><span class="nav-text text-sm" style="color:#a78bfa;">Painel Admin</span></div>
             </div>
             <div class="mt-6 border-t border-slate-700 pt-4">
                 <div class="px-6 mb-2 config-label text-[10px] font-black text-slate-500 uppercase tracking-widest">Configurações</div>
-                <div onclick="Navigation.toggleModal('modal-gestao')" class="nav-item"><i data-lucide="component" class="w-5 h-5 text-slate-400 mr-3"></i><span class="nav-text text-sm">Gestão</span></div>
-                <div onclick="Navigation.toggleModal('modal-titulo')" class="nav-item"><i data-lucide="type" class="w-5 h-5 text-slate-400 mr-3"></i><span class="nav-text text-sm">Área de Trabalho</span></div>
+                <div onclick="Navigation.toggleModal('modal-gestao');MobileUI.closeDrawer();" class="nav-item"><i data-lucide="component" class="w-5 h-5 text-slate-400 mr-3"></i><span class="nav-text text-sm">Gestão</span></div>
+                <div onclick="Navigation.toggleModal('modal-titulo');MobileUI.closeDrawer();" class="nav-item"><i data-lucide="type" class="w-5 h-5 text-slate-400 mr-3"></i><span class="nav-text text-sm">Área de Trabalho</span></div>
             </div>
         </nav>
         <div class="border-t border-slate-700 p-3">
@@ -1793,8 +1795,14 @@ window.AuthLayer = {
 
     _msg(err){ return this._msgs[err.code] || ('Erro: ' + err.message); },
     _setBtn(id, loading, label){ const b = document.getElementById(id); b.disabled = loading; b.innerHTML = loading ? '<span class="auth-spinner"></span>' : label; },
+    toggleAreaField(email) {
+        const campo = document.getElementById('cad-area-field');
+        const mostrar = email.toLowerCase().endsWith('@infrasa.gov.br');
+        campo.style.display = mostrar ? 'block' : 'none';
+        if (!mostrar) document.getElementById('cad-area').value = '';
+    },
     irCadastro(){ document.getElementById('auth-login').classList.add('off'); document.getElementById('auth-cad').classList.add('on'); this._clearMsgs(); },
-    irLogin(){ document.getElementById('auth-cad').classList.remove('on'); document.getElementById('auth-login').classList.remove('off'); this._clearMsgs(); },
+    irLogin(){ document.getElementById('auth-cad').classList.remove('on'); document.getElementById('auth-login').classList.remove('off'); document.getElementById('cad-area-field').style.display='none'; this._clearMsgs(); },
     _clearMsgs(){ ['login-err','cad-err','cad-ok'].forEach(id=>{ const el=document.getElementById(id); if(el){el.classList.remove('on');el.textContent='';} }); },
 
     async login(){
@@ -1825,8 +1833,10 @@ window.AuthLayer = {
         const confirma = document.getElementById('cad-confirma').value;
         const errEl    = document.getElementById('cad-err');
         const okEl     = document.getElementById('cad-ok');
+        const ehInfrasa = email.toLowerCase().endsWith('@infrasa.gov.br');
         errEl.classList.remove('on'); okEl.classList.remove('on');
-        if(!nome||!email||!area||!senha){ errEl.textContent='Preencha todos os campos.'; errEl.classList.add('on'); return; }
+        if(!nome||!email||!senha){ errEl.textContent='Preencha todos os campos.'; errEl.classList.add('on'); return; }
+        if(ehInfrasa && !area){ errEl.textContent='Selecione sua área de lotação.'; errEl.classList.add('on'); return; }
         if(senha!==confirma){ errEl.textContent='As senhas não coincidem.'; errEl.classList.add('on'); return; }
         if(senha.length<6){ errEl.textContent='Senha deve ter no mínimo 6 caracteres.'; errEl.classList.add('on'); return; }
         this._setBtn('btn-cadastrar', true);
