@@ -188,7 +188,9 @@
             #sidebar-listas, #painel-rolagem, #painel-dash { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; }
             #sidebar-listas { display: none; }
             #painel-rolagem { display: none; }
-            #painel-dash { display: none; padding: 0 0 calc(var(--bottom-nav-h) + var(--safe-bottom)) 0 !important; }
+            #painel-dash { display: none; padding: 0 0 calc(var(--bottom-nav-h) + var(--safe-bottom)) 0 !important; overflow-x: hidden !important; box-sizing: border-box !important; }
+            #painel-dash .dash-inner { padding: 0.75rem !important; box-sizing: border-box; width: 100%; }
+            #painel-dash .dash-inner > * { max-width: 100%; box-sizing: border-box; }
         }
         #bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; height: var(--bottom-nav-h); z-index: 100; display: none; align-items: center; justify-content: space-around; padding-bottom: var(--safe-bottom); }
         @media (max-width: 1023px) { #bottom-nav { display: flex; } }
@@ -1219,8 +1221,8 @@ window.DashEngine = {
         <style>
             @media (max-width:1023px){
                 .dash-inner { flex:unset !important; min-height:unset !important; }
-                #dash-bottom-grid { flex:unset !important; min-height:unset !important; }
-                #dash-bottom-grid > div[style*="grid-column:3/5"] { min-height:unset !important; }
+                #dash-bottom-grid { flex:unset !important; min-height:unset !important; width:100% !important; box-sizing:border-box !important; }
+                #dash-bottom-grid > * { box-sizing:border-box !important; width:100% !important; min-width:0 !important; }
                 #dash-bottom-grid .dash-card[style*="flex:1"] { flex:unset !important; min-height:200px !important; overflow:visible !important; }
                 #dash-bottom-grid .dash-card[style*="flex:1"] > div[style*="overflow-y:auto"] { overflow-y:visible !important; flex:unset !important; max-height:none !important; }
             }
@@ -1274,6 +1276,11 @@ window.DashEngine = {
 // ─────────────────────────────────────────────
 window.Navigation = {
     toggleSidebar() {
+        // No mobile, o botão do header também abre o drawer lateral
+        if (typeof MobileUI !== 'undefined' && MobileUI.isMobile()) {
+            MobileUI.toggleDrawer();
+            return;
+        }
         const s = document.getElementById('sidebar-infra');
         if (!s.classList.contains('collapsed')) {
             document.querySelectorAll('#sidebar-infra .submenu.open').forEach(sm => sm.classList.remove('open'));
@@ -1736,6 +1743,7 @@ window.AuthLayer = {
     async sair(){
         if(!confirm('SGD - Sistema de Gestão de Demandas\n\nDeseja realmente sair?')) return;
         const { signOut } = window._authLib;
+        window._loggedOut = true; // impede o onAuthStateChanged de reabrir o app
         await signOut(window._auth);
         location.reload();
     }
@@ -1806,6 +1814,7 @@ function bootWithAuth() {
         : Promise.resolve();
     applyPersistence.then(() => {
         onAuthStateChanged(window._auth, (user) => {
+            if (window._loggedOut) return; // saiu manualmente — não relança
             if (user) {
                 document.getElementById('auth-overlay').classList.add('hidden');
                 startApp();
@@ -1843,7 +1852,18 @@ window.MobileUI = {
     _showDash() { document.getElementById('painel-dash').style.display='flex'; document.getElementById('painel-rolagem').style.display='none'; document.getElementById('sidebar-listas').style.display='none'; },
     _showLista() { document.getElementById('painel-dash').style.display='none'; document.getElementById('painel-rolagem').style.display='none'; document.getElementById('sidebar-listas').style.display='block'; requestAnimationFrame(()=>{ const sl=document.getElementById('sidebar-listas'); const btn=document.getElementById('btn-topo-lista'); if(btn)btn.style.display=sl.scrollHeight>sl.clientHeight?'flex':'none'; lucide.createIcons(); }); },
     _showEdicao() { document.getElementById('painel-dash').style.display='none'; document.getElementById('painel-rolagem').style.display='block'; document.getElementById('sidebar-listas').style.display='none'; },
-    toggleDrawer() { const sidebar=document.getElementById('sidebar-infra'); if(sidebar.classList.contains('mobile-open'))this.closeDrawer(); else { sidebar.classList.add('mobile-open'); document.getElementById('drawer-overlay').classList.add('on'); document.body.style.overflow='hidden'; lucide.createIcons(); } },
+    toggleDrawer() {
+        const sidebar = document.getElementById('sidebar-infra');
+        if (sidebar.classList.contains('mobile-open')) {
+            this.closeDrawer();
+        } else {
+            sidebar.classList.remove('collapsed'); // garante que os textos do menu aparecem
+            sidebar.classList.add('mobile-open');
+            document.getElementById('drawer-overlay').classList.add('on');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+        }
+    },
     closeDrawer() { document.getElementById('sidebar-infra').classList.remove('mobile-open'); document.getElementById('drawer-overlay').classList.remove('on'); document.body.style.overflow=''; },
     _setActive(id) { this._view=id; document.querySelectorAll('.bnav-item:not(.bnav-center)').forEach(b=>b.classList.remove('active')); const el=document.getElementById('bnav-'+id); if(el)el.classList.add('active'); },
     navDash() { this.closeDrawer(); this.closeFilterSheet(); this._setActive('dash'); DashEngine.abrir(); if(this.isMobile())this._showDash(); },
