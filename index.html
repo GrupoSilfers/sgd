@@ -946,6 +946,9 @@ window.AdminEngine = {
                 ? `<span style="font-size:9px;background:#7c3aed;color:white;padding:1px 7px;border-radius:10px;font-weight:700;">ADMIN</span>`
                 : `<span style="font-size:9px;background:#e2e8f0;color:#64748b;padding:1px 7px;border-radius:10px;font-weight:700;">USUÁRIO</span>`;
 
+            // Dados serializados para o botão de edição
+            const dadosEsc = encodeURIComponent(JSON.stringify({ uid: u.uid, nome: u.nome, email: u.email, area: u.area || '', role: u.role || 'user' }));
+
             html += `<div style="background:white;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:16px;overflow:hidden;">
                 <div style="background:#f8fafc;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;">
                     <div style="display:flex;align-items:center;gap:10px;">
@@ -955,7 +958,16 @@ window.AdminEngine = {
                             <div style="font-size:11px;color:#64748b;">${u.email} · ${u.area || ''}</div>
                         </div>
                     </div>
-                    <div style="font-size:11px;color:#94a3b8;">${demandasDoUsuario.length} demanda(s) própria(s) · ${recebidas.length} recebida(s)</div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="font-size:11px;color:#94a3b8;">${demandasDoUsuario.length} demanda(s) própria(s) · ${recebidas.length} recebida(s)</div>
+                        <button onclick="AdminEngine.abrirEdicaoUsuario('${dadosEsc}')"
+                            title="Editar dados do usuário"
+                            style="display:flex;align-items:center;gap:5px;padding:5px 12px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;color:#475569;cursor:pointer;font-weight:600;transition:all .15s;white-space:nowrap;"
+                            onmouseover="this.style.borderColor='#1abc9c';this.style.color='#1abc9c';"
+                            onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#475569';">
+                            <i data-lucide="pencil" style="width:13px;height:13px;"></i> Editar
+                        </button>
+                    </div>
                 </div>`;
 
             if (demandasDoUsuario.length === 0 && recebidas.length === 0) {
@@ -1001,6 +1013,105 @@ window.AdminEngine = {
 
     fechar() {
         document.getElementById('modal-admin').classList.add('hidden');
+    },
+
+    abrirEdicaoUsuario(dadosEsc) {
+        const u = JSON.parse(decodeURIComponent(dadosEsc));
+        // Cria ou reutiliza modal de edição
+        let m = document.getElementById('modal-edit-usuario');
+        if (!m) {
+            m = document.createElement('div');
+            m.id = 'modal-edit-usuario';
+            m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px;';
+            document.body.appendChild(m);
+        }
+        const AREAS = ['SUINM','GEPEM','GEMAR','GEIN'];
+        const areaOpts = AREAS.map(a => `<option value="${a}" ${u.area===a?'selected':''}>${a}</option>`).join('');
+        m.innerHTML = `
+        <div style="background:white;border-radius:12px;width:420px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
+            <div style="background:#1e293b;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:.07em;">Editar Usuário</div>
+                <button onclick="document.getElementById('modal-edit-usuario').style.display='none'" style="color:#94a3b8;background:none;border:none;cursor:pointer;font-size:20px;line-height:1;">×</button>
+            </div>
+            <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Nome Completo</label>
+                    <input id="edit-u-nome" type="text" value="${u.nome || ''}"
+                        style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;color:#1e293b;outline:none;box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#1abc9c'" onblur="this.style.borderColor='#cbd5e1'">
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">E-mail</label>
+                    <input id="edit-u-email" type="email" value="${u.email || ''}" disabled
+                        style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;color:#94a3b8;outline:none;box-sizing:border-box;background:#f8fafc;"
+                        title="O e-mail não pode ser alterado aqui">
+                    <div style="font-size:10px;color:#94a3b8;margin-top:4px;">O e-mail é gerenciado pelo Firebase Authentication e não pode ser alterado aqui.</div>
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Área / Lotação</label>
+                    <select id="edit-u-area"
+                        style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;color:#1e293b;outline:none;box-sizing:border-box;background:white;cursor:pointer;"
+                        onfocus="this.style.borderColor='#1abc9c'" onblur="this.style.borderColor='#cbd5e1'">
+                        ${areaOpts}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Perfil</label>
+                    <select id="edit-u-role"
+                        style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;color:#1e293b;outline:none;box-sizing:border-box;background:white;cursor:pointer;"
+                        onfocus="this.style.borderColor='#1abc9c'" onblur="this.style.borderColor='#cbd5e1'">
+                        <option value="user" ${u.role==='user'?'selected':''}>Usuário</option>
+                        <option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option>
+                    </select>
+                </div>
+                <div id="edit-u-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:10px 14px;border-radius:8px;font-size:12px;"></div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+                    <button onclick="document.getElementById('modal-edit-usuario').style.display='none'"
+                        style="padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;background:white;">
+                        Cancelar
+                    </button>
+                    <button onclick="AdminEngine.salvarEdicaoUsuario('${u.uid}')"
+                        style="padding:10px 24px;background:#1abc9c;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+                        Salvar
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        m.style.display = 'flex';
+    },
+
+    async salvarEdicaoUsuario(uid) {
+        const nome  = document.getElementById('edit-u-nome').value.trim();
+        const area  = document.getElementById('edit-u-area').value;
+        const role  = document.getElementById('edit-u-role').value;
+        const errEl = document.getElementById('edit-u-err');
+        errEl.style.display = 'none';
+        if (!nome) { errEl.textContent = 'O nome não pode ficar em branco.'; errEl.style.display = 'block'; return; }
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+        try {
+            const { doc, getDoc, setDoc } = window._firestoreLib;
+            const ref = doc(window._firestore, 'usuarios', uid);
+            const snap = await getDoc(ref);
+            const atual = snap.exists() ? snap.data() : {};
+            await setDoc(ref, { ...atual, nome, area, role }, { merge: true });
+
+            // Atualiza cache local
+            const idx = (AppEngine._usuarios || []).findIndex(u => u.uid === uid);
+            if (idx !== -1) { AppEngine._usuarios[idx].nome = nome; AppEngine._usuarios[idx].area = area; AppEngine._usuarios[idx].role = role; }
+
+            document.getElementById('modal-edit-usuario').style.display = 'none';
+            SyncUI.show('Usuário atualizado', 'ok');
+            // Reabre o painel para refletir as mudanças
+            await AdminEngine.abrir();
+        } catch(e) {
+            errEl.textContent = 'Erro ao salvar: ' + (e.message || e);
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Salvar';
+        }
     }
 };
 
