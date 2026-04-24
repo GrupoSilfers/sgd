@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGD - SISTEMA DE GESTÃO DE DEMANDAS</title>
@@ -108,10 +107,6 @@
         /* Foto avatar */
         #user-avatar-sidebar { cursor:pointer; transition: opacity .2s; }
         #user-avatar-sidebar:hover { opacity: 0.8; }
-        /* Impersonation bar */
-        #impersonation-bar { display:none; background:#7c3aed; color:white; font-size:11px; font-weight:700; padding:5px 14px; text-align:center; align-items:center; justify-content:center; gap:10px; letter-spacing:.04em; z-index:101; flex-shrink:0; }
-        #impersonation-bar.on { display:flex; }
-        @media (max-width:1023px) { #impersonation-bar { position:fixed; top:0; left:0; right:0; z-index:501; } }
         /* Dropdown usuário no header */
         #user-switch-wrap { display:none; align-items:center; gap:6px; }
         #user-switch-wrap.on { display:flex; }
@@ -338,12 +333,6 @@
     <span id="sync-msg">Sincronizado</span>
 </div>
 
-<!-- Impersonation bar -->
-<div id="impersonation-bar">
-    <i data-lucide="eye" style="width:14px;height:14px;"></i>
-    <span id="impersonation-label">Visualizando como: </span>
-    <button onclick="ImpersonationEngine.sair()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;margin-left:4px;">← Voltar para Admin</button>
-</div>
 <div id="drawer-overlay" onclick="MobileUI.closeDrawer()"></div>
 
 <!-- Bottom Nav -->
@@ -398,16 +387,27 @@
 
 <!-- ═══ MODAL DE ATRIBUIÇÃO ═══ -->
 <div id="modal-atribuicao" class="modal-atrib hidden">
-    <div class="modal-atrib-box">
-        <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:6px;">Atribuir Demanda</h3>
+    <div class="modal-atrib-box" style="width:480px;max-height:85vh;overflow-y:auto;">
+        <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">Atribuir Demanda</h3>
         <p id="atrib-nome-demanda" style="font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:20px;"></p>
+
+        <!-- Destinatário -->
         <div style="margin-bottom:16px;">
             <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;display:block;margin-bottom:8px;">Atribuir para</label>
-            <select id="atrib-usuario-select" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;color:#334155;">
+            <select id="atrib-usuario-select" onchange="AtribuicaoEngine.onUsuarioChange()" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;color:#334155;">
                 <option value="">Selecione um usuário...</option>
             </select>
         </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:20px;">
+
+        <!-- Pendências com checkboxes -->
+        <div id="atrib-pendencias-wrap" style="display:none;margin-bottom:16px;">
+            <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;display:block;margin-bottom:8px;">Selecione as pendências a incluir</label>
+            <div id="atrib-pendencias-lista" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;"></div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:6px;">Pendências já atribuídas a outros usuários estão bloqueadas.</div>
+        </div>
+
+        <!-- Toggle manter visível — só aparece se nenhuma pendência for selecionada -->
+        <div id="atrib-manter-wrap" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:20px;">
             <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
                 <input type="checkbox" id="atrib-manter-visivel" checked style="margin-top:2px;width:16px;height:16px;accent-color:#1abc9c;">
                 <div>
@@ -416,6 +416,7 @@
                 </div>
             </label>
         </div>
+
         <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button onclick="AtribuicaoEngine.fechar()" style="padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;background:white;">Cancelar</button>
             <button onclick="AtribuicaoEngine.confirmar()" style="padding:10px 20px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Atribuir</button>
@@ -517,7 +518,13 @@
                             <span>TRATATIVAS ATIVAS</span>
                             <button onclick="RenderEngine.toggleTodasImpressoes()" class="opacity-0 group-hover/title:opacity-100 transition-opacity hover:text-emerald-500" title="Alternar todas"><i data-lucide="layers" class="w-3 h-3"></i></button>
                         </div>
-                        <div class="flex items-center"><span id="count-ativas" class="mr-2 font-normal text-[10px]">0/0</span><button onclick="AppEngine.adicionarNovaDemanda()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div>
+                        <div class="flex items-center gap-2">
+                            <button id="btn-olho-admin" onclick="RenderEngine.toggleVisaoAdmin()" class="hidden" title="Alternar visão: todas as demandas / apenas minhas" style="color:#94a3b8;background:none;border:none;cursor:pointer;padding:2px;transition:color .2s;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#94a3b8'">
+                                <i id="icone-olho-admin" data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <span id="count-ativas" class="mr-1 font-normal text-[10px]">0/0</span>
+                            <button onclick="AppEngine.adicionarNovaDemanda()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
                     </div>
                     <nav id="lista-ativa"></nav>
                     <div class="header-especial-full"><div class="font-normal">ACOMPANHAMENTO ESPECIAL</div><span id="count-especial" class="font-normal text-[10px]">0/0</span></div>
@@ -556,7 +563,7 @@
 </div>
 
 <button id="btn-salvar-geral" onclick="AppEngine.salvarAlteracoesPagina()" class="fixed bottom-8 right-8 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-xs flex items-center gap-2 z-50 no-print hidden">
-    <i data-lucide="save" class="w-4 h-4"></i><span><u>S</u>ALVAR ALTERAÇÕES</span>
+    <i data-lucide="save" class="w-4 h-4"></i><span>SALVAR  <kbd style="font-size:9px;opacity:0.7;font-family:monospace;">Alt+S</kbd></span>
 </button>
 
 <script>
@@ -613,15 +620,19 @@ window.StorageService = {
 
     _deveVerDemanda(item) {
         const uid = this._uid;
-        // Admin vê tudo — tratado no AppEngine
         if (!uid) return false;
-        // Criador vê se não foi transferido (sem atribuição) OU se marcou para manter visível
+        // Criador: vê sempre se não atribuída, ou se manteve visível
         if (item.criadoPor === uid) {
-            if (!item.atribuidoPara) return true; // não atribuída: sempre visível
-            return item.visivelParaCriador !== false; // atribuída: respeita flag
+            if (!item.atribuidoPara || (Array.isArray(item.atribuidoPara) && item.atribuidoPara.length === 0)) return true;
+            return item.visivelParaCriador !== false;
         }
-        // Destinatário sempre vê
+        // Destinatário: atribuidoPara pode ser string ou array
+        if (Array.isArray(item.atribuidoPara)) return item.atribuidoPara.includes(uid);
         if (item.atribuidoPara === uid) return true;
+        // Pendência atribuída: verifica se uid tem alguma pendência nesta demanda
+        if (Array.isArray(item.passos)) {
+            return item.passos.some(p => typeof p === 'object' && p.atribuidoPara === uid);
+        }
         return false;
     },
 
@@ -715,6 +726,20 @@ window.SyncUI = {
 // ─────────────────────────────────────────────
 // ATRIBUIÇÃO ENGINE
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// PASSOS HELPER — normaliza string → objeto
+// ─────────────────────────────────────────────
+function normalizarPassos(passos) {
+    if (!Array.isArray(passos)) return [];
+    return passos.map(p => {
+        if (typeof p === 'string') return { texto: p, atribuidoPara: null, atribuidoParaNome: null, atribuidoParaFoto: null };
+        return p;
+    });
+}
+
+// ─────────────────────────────────────────────
+// ATRIBUIÇÃO ENGINE
+// ─────────────────────────────────────────────
 window.AtribuicaoEngine = {
     _demandaId: null,
     _usuarios: [],
@@ -724,10 +749,14 @@ window.AtribuicaoEngine = {
         const demanda = AppEngine.db.find(i => i.id === demandaId);
         if (!demanda) return;
 
+        // Normaliza passos para objetos se ainda forem strings
+        demanda.passos = normalizarPassos(demanda.passos);
+
         document.getElementById('atrib-nome-demanda').textContent = demanda.nome;
         document.getElementById('atrib-manter-visivel').checked = true;
+        document.getElementById('atrib-pendencias-wrap').style.display = 'none';
+        document.getElementById('atrib-manter-wrap').style.display = 'block';
 
-        // Carrega usuários
         this._usuarios = await StorageService.getTodosUsuarios();
         const select = document.getElementById('atrib-usuario-select');
         select.innerHTML = '<option value="">Selecione um usuário...</option>';
@@ -736,12 +765,62 @@ window.AtribuicaoEngine = {
             .forEach(u => {
                 const opt = document.createElement('option');
                 opt.value = u.uid;
-                opt.textContent = `${u.nome} (${u.area || ''})`;
-                if (demanda.atribuidoPara === u.uid) opt.selected = true;
+                opt.textContent = `${u.nome}${u.area ? ' (' + u.area + ')' : ''}`;
                 select.appendChild(opt);
             });
 
         document.getElementById('modal-atribuicao').classList.remove('hidden');
+    },
+
+    onUsuarioChange() {
+        const uid = document.getElementById('atrib-usuario-select').value;
+        const demanda = AppEngine.db.find(i => i.id === this._demandaId);
+        if (!uid || !demanda) {
+            document.getElementById('atrib-pendencias-wrap').style.display = 'none';
+            document.getElementById('atrib-manter-wrap').style.display = 'block';
+            return;
+        }
+
+        const passos = normalizarPassos(demanda.passos);
+        const lista = document.getElementById('atrib-pendencias-lista');
+
+        if (passos.length === 0) {
+            document.getElementById('atrib-pendencias-wrap').style.display = 'none';
+            document.getElementById('atrib-manter-wrap').style.display = 'block';
+            return;
+        }
+
+        // Renderiza checkboxes para cada pendência
+        lista.innerHTML = passos.map((p, i) => {
+            const jaAtribuida = p.atribuidoPara && p.atribuidoPara !== uid;
+            const foto = p.atribuidoParaFoto
+                ? `<img src="${p.atribuidoParaFoto}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+                : (jaAtribuida ? `<span style="width:22px;height:22px;border-radius:50%;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;flex-shrink:0;">${(p.atribuidoParaNome||'?')[0].toUpperCase()}</span>` : '');
+            const bloqueada = jaAtribuida;
+            return `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;${bloqueada?'opacity:0.5;cursor:not-allowed;':'cursor:pointer;'}${i===passos.length-1?'border-bottom:none;':''}">
+                <input type="checkbox" data-idx="${i}" ${bloqueada?'disabled':''}
+                    onchange="AtribuicaoEngine.onPendenciaChange()"
+                    style="width:15px;height:15px;accent-color:#7c3aed;flex-shrink:0;">
+                <span style="flex:1;font-size:13px;color:#334155;">${p.texto}</span>
+                ${foto}
+                ${jaAtribuida ? `<span style="font-size:10px;color:#7c3aed;font-weight:600;white-space:nowrap;">${p.atribuidoParaNome||''}</span>` : ''}
+            </label>`;
+        }).join('');
+
+        document.getElementById('atrib-pendencias-wrap').style.display = 'block';
+        this.onPendenciaChange();
+    },
+
+    onPendenciaChange() {
+        const checks = Array.from(document.querySelectorAll('#atrib-pendencias-lista input[type=checkbox]:not([disabled])'));
+        const algumMarcado = checks.some(c => c.checked);
+        // Se alguma pendência marcada → demanda fica automaticamente com o admin
+        const manterWrap = document.getElementById('atrib-manter-wrap');
+        if (algumMarcado) {
+            manterWrap.style.display = 'none';
+        } else {
+            manterWrap.style.display = 'block';
+        }
     },
 
     fechar() {
@@ -751,29 +830,55 @@ window.AtribuicaoEngine = {
 
     async confirmar() {
         const uid = document.getElementById('atrib-usuario-select').value;
-        const manter = document.getElementById('atrib-manter-visivel').checked;
         if (!uid) { alert('Selecione um usuário.'); return; }
 
         const demanda = AppEngine.db.find(i => i.id === this._demandaId);
         if (!demanda) return;
 
+        demanda.passos = normalizarPassos(demanda.passos);
+
         const usuarioDestino = this._usuarios.find(u => u.uid === uid);
-        demanda.atribuidoPara = uid;
-        demanda.atribuidoParaNome = usuarioDestino ? usuarioDestino.nome : '';
-        demanda.visivelParaCriador = manter;
+        const nomeDestino = usuarioDestino?.nome || '';
+        const fotoDestino = AppEngine.config?.userImg || null; // usa foto do destinatário se disponível
+
+        // Verifica quais pendências foram marcadas
+        const checks = Array.from(document.querySelectorAll('#atrib-pendencias-lista input[type=checkbox]:not([disabled])'));
+        const pendenciasMarcadas = checks.filter(c => c.checked).map(c => parseInt(c.dataset.idx));
+        const algumMarcado = pendenciasMarcadas.length > 0;
+
+        if (algumMarcado) {
+            // Atribui somente as pendências marcadas
+            pendenciasMarcadas.forEach(idx => {
+                demanda.passos[idx].atribuidoPara = uid;
+                demanda.passos[idx].atribuidoParaNome = nomeDestino;
+                demanda.passos[idx].atribuidoParaFoto = usuarioDestino?.foto || null;
+            });
+            // Demanda sempre visível para o criador quando há pendências atribuídas
+            demanda.visivelParaCriador = true;
+            // Adiciona destinatário à lista de atribuições múltiplas
+            if (!Array.isArray(demanda.atribuidoPara)) {
+                demanda.atribuidoPara = demanda.atribuidoPara ? [demanda.atribuidoPara] : [];
+            }
+            if (!demanda.atribuidoPara.includes(uid)) demanda.atribuidoPara.push(uid);
+            if (!demanda.atribuidoParaNome) demanda.atribuidoParaNome = nomeDestino;
+        } else {
+            // Sem pendências: atribuição total da demanda (comportamento original)
+            const manter = document.getElementById('atrib-manter-visivel').checked;
+            demanda.atribuidoPara = uid;
+            demanda.atribuidoParaNome = nomeDestino;
+            demanda.visivelParaCriador = manter;
+            if (!manter) {
+                AppEngine.db = AppEngine.db.filter(i => i.id !== demanda.id);
+                AppEngine.itemAtivoId = null;
+                document.getElementById('painel-rolagem').innerHTML = '';
+                document.getElementById('btn-salvar-geral').classList.add('hidden');
+            }
+        }
 
         SyncUI.show('Salvando atribuição...', 'syncing');
         await StorageService.setDemanda(demanda);
-
-        // Se não deve manter, remove da lista local
-        if (!manter) {
-            AppEngine.db = AppEngine.db.filter(i => i.id !== demanda.id);
-            AppEngine.itemAtivoId = null;
-            document.getElementById('painel-rolagem').innerHTML = '';
-            document.getElementById('btn-salvar-geral').classList.add('hidden');
-        }
-
         RenderEngine.renderListas();
+        if (AppEngine.itemAtivoId === demanda.id) await RenderEngine.abrirDetalhes(demanda.id);
         SyncUI.show('Atribuição salva!', 'ok');
         this.fechar();
     },
@@ -785,9 +890,10 @@ window.AtribuicaoEngine = {
         demanda.atribuidoPara = null;
         demanda.atribuidoParaNome = null;
         demanda.visivelParaCriador = true;
+        // Remove atribuições das pendências
+        demanda.passos = normalizarPassos(demanda.passos).map(p => ({ ...p, atribuidoPara: null, atribuidoParaNome: null, atribuidoParaFoto: null }));
         SyncUI.show('Devolvendo...', 'syncing');
         StorageService.setDemanda(demanda).then(() => {
-            // Remove da lista local do destinatário
             AppEngine.db = AppEngine.db.filter(i => i.id !== demandaId);
             AppEngine.itemAtivoId = null;
             document.getElementById('painel-rolagem').innerHTML = '';
@@ -801,12 +907,31 @@ window.AtribuicaoEngine = {
         const demanda = AppEngine.db.find(i => i.id === demandaId);
         if (!demanda) return;
         if (!confirm('Remover atribuição desta demanda?')) return;
+
         demanda.atribuidoPara = null;
         demanda.atribuidoParaNome = null;
-        demanda.visivelParaCriador = true;
-        SyncUI.show('Salvando...', 'syncing');
-        StorageService.setDemanda(demanda)
-            .then(() => { RenderEngine.renderListas(); SyncUI.show('Atribuição removida', 'ok'); });
+        demanda.visivelParaCriador = true; // devolve visibilidade ao criador original
+        demanda.passos = normalizarPassos(demanda.passos).map(p => ({
+            ...p, atribuidoPara: null, atribuidoParaNome: null, atribuidoParaFoto: null
+        }));
+
+        SyncUI.show('Removendo atribuição...', 'syncing');
+        StorageService.setDemanda(demanda).then(() => {
+            // Admin: mantém a demanda na tela (não remove do db local)
+            // Usuário comum que era destinatário: remove da sua lista
+            const isAdmin = AppEngine.isAdmin && !ImpersonationEngine._ativo;
+            if (!isAdmin) {
+                AppEngine.db = AppEngine.db.filter(i => i.id !== demandaId);
+                AppEngine.itemAtivoId = null;
+                document.getElementById('painel-rolagem').innerHTML = '';
+                document.getElementById('btn-salvar-geral').classList.add('hidden');
+            }
+            RenderEngine.renderListas();
+            if (isAdmin && AppEngine.itemAtivoId === demandaId) {
+                RenderEngine.abrirDetalhes(demandaId);
+            }
+            SyncUI.show('Atribuição removida', 'ok');
+        });
     }
 };
 
@@ -858,13 +983,15 @@ window.ImpersonationEngine = {
         if (!snapPerfil.exists()) { alert('Usuário não encontrado.'); document.getElementById('user-switch-select').value = '__admin__'; return; }
         const perfilAlvo = snapPerfil.data();
 
-        // Carrega demandas visíveis para esse usuário (reusa lógica do StorageService)
+        // Carrega demandas visíveis para esse usuário
         const dbAlvo = (await StorageService.getTodasDemandas()).filter(item => {
             if (item.criadoPor === uid) {
-                if (!item.atribuidoPara) return true;
+                if (!item.atribuidoPara || (Array.isArray(item.atribuidoPara) && item.atribuidoPara.length === 0)) return true;
                 return item.visivelParaCriador !== false;
             }
-            if (item.atribuidoPara === uid) return true;
+            if (Array.isArray(item.atribuidoPara)) { if (item.atribuidoPara.includes(uid)) return true; }
+            else if (item.atribuidoPara === uid) return true;
+            if (Array.isArray(item.passos)) return item.passos.some(p => typeof p === 'object' && p.atribuidoPara === uid);
             return false;
         });
 
@@ -879,9 +1006,7 @@ window.ImpersonationEngine = {
         AppEngine.itemAtivoId = null;
         this._ativo = true;
 
-        // UI
-        document.getElementById('impersonation-bar').classList.add('on');
-        document.getElementById('impersonation-label').textContent = `Visualizando como: ${perfilAlvo.nome}`;
+        // UI — dropdown já mostra o usuário selecionado; sem barra visual
         AppEngine.aplicarConfig();
         RenderEngine.renderListas();
         DashEngine.abrir();
@@ -897,8 +1022,7 @@ window.ImpersonationEngine = {
         AppEngine.itemAtivoId = null;
         this._ativo = false;
 
-        // UI
-        document.getElementById('impersonation-bar').classList.remove('on');
+        // UI — reset dropdown
         const selD = document.getElementById('user-switch-select');
         const selM = document.getElementById('user-switch-select-mobile');
         if (selD) selD.value = '__admin__';
@@ -1142,6 +1266,7 @@ window.AppEngine = {
         // Mostra item admin se for admin
         if (this.isAdmin) {
             document.getElementById('nav-admin-item').classList.remove('hidden');
+            document.getElementById('btn-olho-admin').classList.remove('hidden');
         }
     },
 
@@ -1226,6 +1351,20 @@ window.AppEngine = {
             .catch(() => SyncUI.show('Erro ao salvar', 'error'));
     },
 
+    async salvarProcesso(id) {
+        const el = document.getElementById('edit-processo');
+        if (!el) return;
+        const item = AppEngine.db.find(i => i.id === id);
+        if (!item) return;
+        const novoTexto = el.innerText;
+        if (item.processo === novoTexto) return; // sem mudança
+        item.processo = novoTexto;
+        SyncUI.show('Salvando contexto...', 'syncing');
+        StorageService.setDemanda(item)
+            .then(() => SyncUI.show('Contexto salvo', 'ok'))
+            .catch(() => SyncUI.show('Erro ao salvar', 'error'));
+    },
+
     async salvarAlteracoesPagina() {
         if (!this.itemAtivoId) return;
         const item = this.db.find(i => i.id === this.itemAtivoId);
@@ -1244,7 +1383,15 @@ window.AppEngine = {
 
     async lancarLog(id) {
         const input = document.getElementById('log-input');
-        const texto = input.innerText.trim();
+        // Usa innerHTML para preservar quebras de linha (<br> → \n)
+        const html = input.innerHTML;
+        const texto = html
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<div>/gi, '\n')
+            .replace(/<\/div>/gi, '')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/<[^>]+>/g, '')
+            .trim();
         if (!texto) return;
         const logs = await StorageService.getLogs(id);
         logs.push({ data: new Date().toISOString(), texto: texto, imprimir: true });
@@ -1439,6 +1586,8 @@ window.Navigation = {
 // RENDER ENGINE
 // ─────────────────────────────────────────────
 window.RenderEngine = {
+    _visaoAdmin: true, // true = vê tudo | false = só as próprias
+
     renderListas() {
         const busca = document.getElementById('busca-rapida').value.toLowerCase();
         const status = document.getElementById('filter-status').value;
@@ -1450,6 +1599,19 @@ window.RenderEngine = {
         lucide.createIcons();
     },
 
+    toggleVisaoAdmin() {
+        this._visaoAdmin = !this._visaoAdmin;
+        const icone = document.getElementById('icone-olho-admin');
+        if (icone) {
+            icone.setAttribute('data-lucide', this._visaoAdmin ? 'eye' : 'eye-off');
+            const btn = document.getElementById('btn-olho-admin');
+            btn.title = this._visaoAdmin ? 'Visão: todas as demandas — clique para ver só as suas' : 'Visão: só as suas demandas — clique para ver todas';
+            btn.style.color = this._visaoAdmin ? '#94a3b8' : '#7c3aed';
+        }
+        lucide.createIcons();
+        this.renderListas();
+    },
+
     _badgeAtribuicao(item) {
         const uid = AppEngine.currentUser?.uid;
         const isAdmin = AppEngine.isAdmin && !ImpersonationEngine._ativo;
@@ -1458,20 +1620,29 @@ window.RenderEngine = {
             const u = (AppEngine._usuarios || []).find(x => x.uid === fallbackUid);
             return u ? u.nome.split(' ')[0] : '?';
         };
-        if (!item.atribuidoPara) {
+
+        // Normaliza atribuidoPara para verificação
+        const atribArr = Array.isArray(item.atribuidoPara)
+            ? item.atribuidoPara
+            : (item.atribuidoPara ? [item.atribuidoPara] : []);
+        const temAtrib = atribArr.length > 0;
+        const euSouDestinatario = atribArr.includes(uid);
+
+        if (!temAtrib) {
             if (isAdmin && item.criadoPor && item.criadoPor !== uid) {
                 return `<span class="badge-recebida">${resNome(item.criadoPorNome, item.criadoPor)}</span>`;
             }
             return '';
         }
-        const nomeAlvo = resNome(item.atribuidoParaNome, item.atribuidoPara);
+        const nomeAlvo = resNome(item.atribuidoParaNome, atribArr[0]);
         const nomeCriador = resNome(item.criadoPorNome, item.criadoPor);
         if (isAdmin) {
-            if (item.criadoPor !== item.atribuidoPara) return `<span class="badge-atribuicao">${nomeCriador} → ${nomeAlvo}</span>`;
+            const label = atribArr.length > 1 ? `${atribArr.length} usuários` : nomeAlvo;
+            if (item.criadoPor !== atribArr[0]) return `<span class="badge-atribuicao">${nomeCriador} → ${label}</span>`;
             return `<span class="badge-recebida">${nomeCriador}</span>`;
         }
-        if (item.criadoPor === uid && item.atribuidoPara !== uid) return `<span class="badge-atribuicao">→ ${nomeAlvo}</span>`;
-        if (item.atribuidoPara === uid && item.criadoPor !== uid) return `<span class="badge-recebida">← ${nomeCriador}</span>`;
+        if (item.criadoPor === uid && !euSouDestinatario) return `<span class="badge-atribuicao">→ ${nomeAlvo}</span>`;
+        if (euSouDestinatario && item.criadoPor !== uid) return `<span class="badge-recebida">← ${nomeCriador}</span>`;
         return '';
     },
 
@@ -1479,6 +1650,15 @@ window.RenderEngine = {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
         let items = AppEngine.db.filter(i => (i.grupo || 'ativa') === grupo);
+
+        // Filtro do olho: admin com olho fechado vê só as próprias
+        // Demandas sem criadoPor (criadas antes do multiusuário) são tratadas como do admin
+        const isAdmin = AppEngine.isAdmin && !ImpersonationEngine._ativo;
+        if (isAdmin && !this._visaoAdmin) {
+            const uid = AppEngine.currentUser?.uid;
+            items = items.filter(i => !i.criadoPor || i.criadoPor === uid);
+        }
+
         if (busca) items = items.filter(i => i.nome.toLowerCase().includes(busca));
         if (filtro !== 'todos') items = items.filter(i => i.status === filtro);
         items.sort((a, b) => ordem === 'asc' ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome));
@@ -1530,21 +1710,45 @@ window.RenderEngine = {
         };
 
         let atribBadgeHtml = '';
-        if (p.atribuidoPara) {
-            if (p.criadoPor === viewingUid && p.atribuidoPara !== viewingUid) {
-                const nomeAlvo = resolverNome(p.atribuidoPara, p.atribuidoParaNome);
-                atribBadgeHtml = `<span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Atribuída para: ${nomeAlvo}</span>
-                <button onclick="AtribuicaoEngine.remover('${id}')" style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:4px;border:1px solid #fecaca;">Remover atribuição</button>`;
-            } else if (p.atribuidoPara === viewingUid && p.criadoPor !== viewingUid) {
+
+        // Normaliza atribuidoPara para array sempre
+        const atribArr = Array.isArray(p.atribuidoPara)
+            ? p.atribuidoPara
+            : (p.atribuidoPara ? [p.atribuidoPara] : []);
+        const temAtrib = atribArr.length > 0;
+        const euSouDestinatario = atribArr.includes(viewingUid);
+        const euSouCriador = p.criadoPor === viewingUid;
+
+        if (temAtrib) {
+            if (isAdmin && !euSouDestinatario) {
+                // Admin vendo demanda de outro: badge + botão remover
                 const nomeCriador = resolverNome(p.criadoPor, p.criadoPorNome);
-                atribBadgeHtml = `<span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Recebida de: ${nomeCriador}</span>
-                <button onclick="AtribuicaoEngine.devolver('${id}')" title="Devolver esta demanda ao remetente" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#334155;background:none;border:1px solid #cbd5e1;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:400;transition:background .15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'"><i data-lucide="corner-up-left" style="width:12px;height:12px;"></i> Devolver</button>`;
-            } else if (isAdmin) {
+                const nomeAlvo = atribArr.length > 1
+                    ? `${atribArr.length} usuários`
+                    : resolverNome(atribArr[0], p.atribuidoParaNome);
+                atribBadgeHtml = `
+                    <span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">${nomeCriador} → ${nomeAlvo}</span>
+                    <button onclick="AtribuicaoEngine.remover('${id}')" title="Remover atribuição" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#ef4444;background:none;border:1px solid #fecaca;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:400;transition:background .15s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
+                        <i data-lucide="x" style="width:12px;height:12px;"></i> Remover atribuição
+                    </button>`;
+            } else if (euSouCriador && !euSouDestinatario) {
+                // Criador vendo demanda que atribuiu
+                const nomeAlvo = atribArr.length > 1
+                    ? `${atribArr.length} usuários`
+                    : resolverNome(atribArr[0], p.atribuidoParaNome);
+                atribBadgeHtml = `
+                    <span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Atribuída para: ${nomeAlvo}</span>
+                    <button onclick="AtribuicaoEngine.remover('${id}')" style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:4px;border:1px solid #fecaca;">Remover atribuição</button>`;
+            } else if (euSouDestinatario && !euSouCriador) {
+                // Destinatário vendo demanda recebida: botão devolver
                 const nomeCriador = resolverNome(p.criadoPor, p.criadoPorNome);
-                const nomeAlvo = resolverNome(p.atribuidoPara, p.atribuidoParaNome);
-                atribBadgeHtml = `<span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">${nomeCriador} → ${nomeAlvo}</span>`;
+                atribBadgeHtml = `
+                    <span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Recebida de: ${nomeCriador}</span>
+                    <button onclick="AtribuicaoEngine.devolver('${id}')" title="Devolver esta demanda ao remetente" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#334155;background:none;border:1px solid #cbd5e1;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:400;transition:background .15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                        <i data-lucide="corner-up-left" style="width:12px;height:12px;"></i> Devolver
+                    </button>`;
             }
-        } else if (p.criadoPor && p.criadoPor !== viewingUid && isAdmin) {
+        } else if (p.criadoPor && p.criadoPor !== uid && isAdmin) {
             const nomeCriador = resolverNome(p.criadoPor, p.criadoPorNome);
             atribBadgeHtml = `<span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Por: ${nomeCriador}</span>`;
         }
@@ -1554,7 +1758,10 @@ window.RenderEngine = {
         painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding-bottom:80px">
             <div class="flex justify-between items-start mb-6 border-b pb-6" style="flex-wrap:wrap;gap:12px;">
                 <div>
-                    <h2 contenteditable="${canEdit}" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase">${p.nome}</h2>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <h2 contenteditable="${canEdit}" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase" style="flex:1;">${p.nome}</h2>
+                        ${canEdit ? `<i data-lucide="pencil" style="width:16px;height:16px;color:#94a3b8;flex-shrink:0;cursor:text;" title="Clique no título para editar"></i>` : ''}
+                    </div>
                     <p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg} · ${p.criadoPorNome || ''}</p>
                     <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">${atribBadgeHtml}</div>
                 </div>
@@ -1572,7 +1779,7 @@ window.RenderEngine = {
             </div>
             <div class="secao-card">
                 <div class="secao-header"><span>Contexto</span></div>
-                <div contenteditable="${canEdit}" id="edit-processo" class="textarea-processo text-sm">${p.processo || ''}</div>
+                <div contenteditable="${canEdit}" id="edit-processo" onblur="AppEngine.salvarProcesso('${id}')" class="textarea-processo text-sm">${p.processo || ''}</div>
             </div>
             <div class="secao-card">
                 <div class="secao-header"><span>Histórico</span><button onclick="RenderEngine.toggleLogArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div>
@@ -1586,7 +1793,28 @@ window.RenderEngine = {
                 <div class="secao-header"><span>Pendências</span><button onclick="RenderEngine.togglePendenciaArea()" class="btn-add-mini"><i data-lucide="plus" class="w-4 h-4"></i></button></div>
                 <div class="p-4">
                     <ul id="prioridades-sort" class="space-y-2">
-                        ${p.passos.map((s, i) => `<li class="flex items-center gap-3 bg-white p-3 rounded border group"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div contenteditable="${canEdit}" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;word-break:break-word;">${s}</div><button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></li>`).join('')}
+                        ${normalizarPassos(p.passos).map((passo, i) => {
+                            const texto = typeof passo === 'string' ? passo : passo.texto;
+                            const atribUid = typeof passo === 'object' ? passo.atribuidoPara : null;
+                            const atribNome = typeof passo === 'object' ? passo.atribuidoParaNome : null;
+                            const atribFoto = typeof passo === 'object' ? passo.atribuidoParaFoto : null;
+                            const minhaAtrib = atribUid === viewingUid;
+                            const outroAtrib = atribUid && atribUid !== viewingUid;
+                            const podeEditar = canEdit && !outroAtrib;
+                            const avatarHtml = atribUid
+                                ? (atribFoto
+                                    ? `<img src="${atribFoto}" title="${atribNome||''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #7c3aed;">`
+                                    : `<span title="${atribNome||''}" style="width:24px;height:24px;border-radius:50%;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;border:2px solid #7c3aed;">${(atribNome||'?')[0].toUpperCase()}</span>`)
+                                : '';
+                            const lockIcon = outroAtrib ? `<i data-lucide="lock" style="width:13px;height:13px;color:#94a3b8;flex-shrink:0;" title="Atribuída a ${atribNome||'outro usuário'}"></i>` : '';
+                            return `<li class="flex items-center gap-3 bg-white p-3 rounded border group${outroAtrib?' opacity-60':''}${minhaAtrib?' border-l-4 border-l-violet-400':''}">
+                                <div class="handle${outroAtrib?' pointer-events-none':''} text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
+                                <div contenteditable="${podeEditar}" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;word-break:break-word;">${texto}</div>
+                                ${lockIcon}
+                                ${avatarHtml}
+                                ${podeEditar ? `<button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                            </li>`;
+                        }).join('')}
                     </ul>
                 </div>
                 <div id="input-pendencia-area" class="hidden p-4 border-t bg-white">
@@ -1605,7 +1833,10 @@ window.RenderEngine = {
             });
         }
         Sortable.create(document.getElementById('prioridades-sort'), { animation: 150, handle: '.handle', onEnd: async () => {
-            p.passos = Array.from(document.querySelectorAll('#prioridades-sort [contenteditable]')).map(el => el.innerText);
+            const textos = Array.from(document.querySelectorAll('#prioridades-sort [contenteditable]')).map(el => el.innerText);
+            const passosAtuais = normalizarPassos(p.passos);
+            // Reordena os objetos de acordo com a nova ordem dos textos
+            p.passos = textos.map(t => passosAtuais.find(x => x.texto === t) || { texto: t, atribuidoPara: null, atribuidoParaNome: null, atribuidoParaFoto: null });
             SyncUI.show('Salvando...', 'syncing');
             await StorageService.setDemanda(p);
             SyncUI.show('Salvo', 'ok');
@@ -1623,7 +1854,7 @@ window.RenderEngine = {
         const logs = await StorageService.getLogs(id);
         document.getElementById('logs-container').innerHTML = [...logs].reverse().map((l, i) => {
             const idx = logs.length - 1 - i;
-            return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-emerald-600 shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}',${idx},this.innerText)" class="flex-1 text-sm outline-none">${l.texto}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}',${idx})" class="text-slate-300"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}',${idx})" class="text-red-200 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
+            return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-emerald-600 shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}',${idx},this)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;">${(l.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}',${idx})" class="text-slate-300"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}',${idx})" class="text-red-200 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
         }).join('');
         lucide.createIcons();
     },
@@ -1663,12 +1894,46 @@ window.RenderEngine = {
         }
     },
 
-    async edL(id, idx, text) { const l = await StorageService.getLogs(id); l[idx].texto = text; await StorageService.setLogs(id, l); },
+    async edL(id, idx, el) {
+        const texto = el.innerHTML
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<div>/gi, '\n')
+            .replace(/<\/div>/gi, '')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&lt;/gi, '<')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+        const l = await StorageService.getLogs(id);
+        l[idx].texto = texto;
+        await StorageService.setLogs(id, l);
+    },
     async togL(id, idx) { const l = await StorageService.getLogs(id); l[idx].imprimir = !l[idx].imprimir; SyncUI.show('Salvando...','syncing'); await StorageService.setLogs(id, l); SyncUI.show('Salvo','ok'); await this.updateLogUI(id); },
     async exL(id, idx) { if (confirm('Excluir?')) { const l = await StorageService.getLogs(id); l.splice(idx, 1); SyncUI.show('Excluindo...','syncing'); await StorageService.setLogs(id, l); SyncUI.show('Salvo','ok'); await this.updateLogUI(id); } },
-    async editP(id, i, text) { AppEngine.db.find(x => x.id === id).passos[i] = text; await StorageService.setDemanda(AppEngine.db.find(x => x.id === id)); },
-    async remP(id, i) { AppEngine.db.find(x => x.id === id).passos.splice(i, 1); SyncUI.show('Salvando...','syncing'); await this.abrirDetalhes(id); StorageService.setDemanda(AppEngine.db.find(x=>x.id===id)).then(()=>SyncUI.show('Salvo','ok')).catch(()=>SyncUI.show('Erro','error')); },
-    async addP(id) { const input = document.getElementById('pendencia-input'); if (!input.innerText.trim()) return; AppEngine.db.find(x => x.id === id).passos.push(input.innerText); SyncUI.show('Salvando...','syncing'); await this.abrirDetalhes(id); StorageService.setDemanda(AppEngine.db.find(x=>x.id===id)).then(()=>SyncUI.show('Salvo','ok')).catch(()=>SyncUI.show('Erro','error')); },
+    async editP(id, i, text) {
+        const item = AppEngine.db.find(x => x.id === id);
+        item.passos = normalizarPassos(item.passos);
+        item.passos[i].texto = text;
+        await StorageService.setDemanda(item);
+    },
+    async remP(id, i) {
+        const item = AppEngine.db.find(x => x.id === id);
+        item.passos = normalizarPassos(item.passos);
+        item.passos.splice(i, 1);
+        SyncUI.show('Salvando...','syncing');
+        await this.abrirDetalhes(id);
+        StorageService.setDemanda(item).then(()=>SyncUI.show('Salvo','ok')).catch(()=>SyncUI.show('Erro','error'));
+    },
+    async addP(id) {
+        const input = document.getElementById('pendencia-input');
+        if (!input.innerText.trim()) return;
+        const item = AppEngine.db.find(x => x.id === id);
+        item.passos = normalizarPassos(item.passos);
+        item.passos.push({ texto: input.innerText, atribuidoPara: null, atribuidoParaNome: null, atribuidoParaFoto: null });
+        SyncUI.show('Salvando...','syncing');
+        await this.abrirDetalhes(id);
+        StorageService.setDemanda(item).then(()=>SyncUI.show('Salvo','ok')).catch(()=>SyncUI.show('Erro','error'));
+    },
 
     async renderizarPadraoExecutivo() {
         const painel = document.getElementById('painel-rolagem');
@@ -1687,7 +1952,7 @@ window.RenderEngine = {
         for (const [index, item] of itensFiltrados.entries()) {
             const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
             const cor = item.status === 'urgente' ? '#ef4444' : item.status === 'pendente' ? '#facc15' : item.status === 'andamento' ? '#3b82f6' : item.status === 'aguardando' ? '#94a3b8' : '#10b981';
-            html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? item.passos.map(px => `• ${px}`).join('\n') : 'Nenhuma.'}</div>${logs.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logs.map(l => `<span style="font-size:9pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n')}</div>` : ''}</div>`;
+            html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? normalizarPassos(item.passos).map(px => `• ${px.texto}`).join('\n') : 'Nenhuma.'}</div>${logs.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logs.map(l => `<span style="font-size:9pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n')}</div>` : ''}</div>`;
         }
         html += `<div style="margin-top:40px;font-size:9pt;color:#94a3b8;">SGD - ${AppEngine.config.tituloComp} · Gerado em: ${formatarDT(new Date())}</div></div>`;
         painel.innerHTML = html;
@@ -1714,7 +1979,7 @@ window.RenderEngine = {
             let demandaTexto = `\n<strong>>>> ${index + 1}. ${item.nome.toUpperCase()}</strong>\n\n`;
             demandaTexto += `CONTEXTO:\n${item.processo || 'N/A'}\n\n`;
             demandaTexto += `HISTÓRICO:\n${logs.length ? logs.map(l => `<span style="font-size:8.5pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n') : 'N/A'}\n\n`;
-            demandaTexto += `PENDÊNCIAS:\n${item.passos.length ? item.passos.map(p => `• ${p}`).join('\n') : 'Nenhuma.'}\n\n`;
+            demandaTexto += `PENDÊNCIAS:\n${item.passos.length ? normalizarPassos(item.passos).map(p => `• ${p.texto}`).join('\n') : 'Nenhuma.'}\n\n`;
             demandaTexto += `############################################################################################\n`;
             bufferTexto += demandaTexto;
             if ((index + 1) % 3 === 0 || (index + 1) === itensFiltrados.length) {
@@ -1757,7 +2022,7 @@ window.RenderEngine = {
                 if (logs.length) { logs.forEach(l => { const linhas = l.texto.split('\n'); linhas.forEach((linha, li) => { if (li === 0) corpo += p8(formatarDT(l.data), linha); else corpo += p10(linha || '&nbsp;'); }); }); } else corpo += p10('N/A');
                 corpo += lb();
                 corpo += p11('PENDÊNCIAS:');
-                if (item.passos.length) { item.passos.forEach(p => { p.split('\n').forEach((linha, li) => corpo += p10((li === 0 ? '• ' : '') + (linha || ''))); }); } else corpo += p10('Nenhuma.');
+                if (item.passos.length) { normalizarPassos(item.passos).forEach(p => { p.texto.split('\n').forEach((linha, li) => corpo += p10((li === 0 ? '• ' : '') + (linha || ''))); }); } else corpo += p10('Nenhuma.');
                 corpo += lb();
                 corpo += p10(`<span style="color:#aaa;">${SEP}</span>`);
             }
@@ -1922,7 +2187,10 @@ window.startApp = async function startApp() {
     lucide.createIcons();
     document.getElementById('loading-screen').style.display = 'none';
 
-    if (isAdmin) document.getElementById('nav-admin-item').classList.remove('hidden');
+    if (isAdmin) {
+        document.getElementById('nav-admin-item').classList.remove('hidden');
+        document.getElementById('btn-olho-admin').classList.remove('hidden');
+    }
 
     SyncUI.show('Conectado', 'ok');
     DashEngine.abrir();
@@ -1965,7 +2233,11 @@ document.getElementById('btn-pdf-trigger').onclick = () => {
     html2pdf().set(opt).from(container).save().then(() => { document.body.removeChild(container); }).catch(() => { document.body.removeChild(container); alert('Erro ao gerar PDF.'); });
 };
 
-window.addEventListener('keydown', e => { if((e.ctrlKey || e.metaKey) && e.key === 's'){ e.preventDefault(); AppEngine.salvarAlteracoesPagina(); } });
+window.addEventListener('keydown', e => {
+    const ctrlS = (e.ctrlKey || e.metaKey) && e.key === 's';
+    const altS  = e.altKey && (e.key === 's' || e.key === 'S');
+    if (ctrlS || altS) { e.preventDefault(); AppEngine.salvarAlteracoesPagina(); }
+});
 
 // ═══ MOBILE UI ═══
 window.MobileUI = {
