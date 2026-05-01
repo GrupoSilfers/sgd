@@ -1789,17 +1789,12 @@ window.RenderEngine = {
     },
 
     async abrirDetalhes(id) {
-        // Proteção contra chamadas recursivas
         if (this._abrindo) return;
         this._abrindo = true;
-
-        AppEngine.itemAtivoId = id;
-
-        const p = AppEngine.db.find(i => i.id === id);
-        if (!p) {
-            this._abrindo = false;
-            return;
-        }
+        try {
+            AppEngine.itemAtivoId = id;
+            const p = AppEngine.db.find(i => i.id === id);
+            if (!p) { this._abrindo = false; return; }
 
         // Skeleton loader imediato
         const painel = document.getElementById('painel-rolagem');
@@ -1968,8 +1963,9 @@ window.RenderEngine = {
             if (btn && pr.scrollHeight > pr.clientHeight) btn.style.display = 'flex';
         });
         if (typeof MobileUI !== 'undefined' && MobileUI.isMobile()) MobileUI._showEdicao();
-        // Libera o guard
-        this._abrindo = false;
+        } finally {
+            this._abrindo = false;
+        }
     },
 
     async updateLogUI(id) {
