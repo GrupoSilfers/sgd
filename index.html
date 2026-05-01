@@ -35,23 +35,87 @@
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
     <style>
-        :root { --infra-dark: #2c3e50; --infra-blue: #34495e; --infra-green: #1abc9c; --bottom-nav-h: 64px; --safe-bottom: env(safe-area-inset-bottom, 0px); }
-        .item-active { background-color: rgba(26, 188, 156, 0.1); border-right: 4px solid var(--infra-green); margin-right: 4px; }
+        :root {
+            /* ── Paleta INFRASA ─────────────────────────── */
+            --infra-dark:       #0d2137;   /* azul profundo — sidebar */
+            --infra-mid:        #153455;   /* azul médio — hover sidebar */
+            --infra-green:      #2e8b57;   /* verde INFRASA — ativo, ações */
+            --infra-green-dim:  rgba(46,139,87,0.10);
+            --infra-green-mid:  rgba(46,139,87,0.18);
+            --infra-blue:       #1a4d8f;   /* azul destaque — badges, links */
+            --infra-blue-dim:   rgba(26,77,143,0.10);
+
+            /* ── Interface (neutros quentes-azulados) ─── */
+            --ui-bg:        #f4f6f9;
+            --ui-surface:   #ffffff;
+            --ui-border:    #dde2ea;
+            --ui-border-md: #c4cdd8;
+            --ui-text:      #1a2535;
+            --ui-text-2:    #3d4e63;
+            --ui-text-3:    #6b7f96;
+            --ui-text-4:    #a8b5c4;
+
+            /* ── Tipografia ─────────────────────────── */
+            --txt-xs:   10px;
+            --txt-sm:   12px;
+            --txt-base: 14px;
+            --txt-lg:   16px;
+            --txt-xl:   20px;
+            --txt-2xl:  28px;
+
+            /* ── Sistema ────────────────────────────── */
+            --transition:   0.18s ease;
+            --radius:       8px;
+            --bottom-nav-h: 64px;
+            --safe-bottom:  env(safe-area-inset-bottom, 0px);
+        }
+        .item-active { background-color: var(--infra-green-dim); border-right: 3px solid var(--infra-green); }
         #main-app { display: grid; grid-template-columns: auto 1fr; height: 100vh; overflow: hidden; }
-        #sidebar-infra { width: 220px; background-color: var(--infra-dark); transition: width 0.3s; display: flex; flex-direction: column; color: white; z-index: 50; }
+        #sidebar-infra { width: 220px; background-color: #0d2137; transition: width var(--transition); display: flex; flex-direction: column; color: white; z-index: 50; }
         #sidebar-infra.collapsed { width: 75px; }
         .collapsed .nav-text, .collapsed .user-info, .collapsed .config-label, .collapsed .chevron-icon { display: none; }
-        .nav-item { display: flex; align-items: center; padding: 12px 24px; cursor: pointer; transition: background 0.2s; white-space: nowrap; color: #cbd5e1; }
-        .nav-item i { min-width: 20px; flex-shrink: 0; }
-        .nav-item:hover { background-color: rgba(255,255,255,0.1); color: white; }
-        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.1); }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; cursor: pointer; transition: background var(--transition), color var(--transition); white-space: nowrap; color: #8faab8; font-size: var(--txt-sm); letter-spacing: .02em; }
+        .nav-item i { min-width: 18px; flex-shrink: 0; color: #7a9aaa; transition: color var(--transition); }
+        .nav-item:hover { background-color: rgba(255,255,255,0.06); color: #e8f0f5; }
+        .nav-item:hover i { color: var(--infra-green); }
+        .nav-item.active-nav { background-color: var(--infra-green-dim); color: var(--infra-green); border-right: 3px solid var(--infra-green); }
+        .nav-item.active-nav i { color: var(--infra-green); }
+        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.2); }
         .submenu.open { max-height: 200px; }
-        .nav-subitem { padding: 10px 24px 10px 60px; font-size: 13px; cursor: pointer; color: #cbd5e1; transition: background 0.2s; }
-        .nav-subitem:hover { background-color: rgba(0, 0, 0, 0.3); color: white; }
-        #report-toolbar { position: fixed; top: 20px; right: 40px; display: none; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; }
-        .icon-btn { color: #64748b; transition: all 0.2s; cursor: pointer; background: none; border: none; outline: none; }
+        .nav-subitem { padding: 9px 20px 9px 52px; font-size: var(--txt-sm); cursor: pointer; color: #5a7a95; transition: background var(--transition), color var(--transition); }
+        .nav-subitem:hover { background-color: rgba(255,255,255,0.05); color: var(--infra-green); }
+        /* Skeleton loader */
+        @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+        .skeleton { background: linear-gradient(90deg,#f2f4f7 25%,#e4e7ec 50%,#f2f4f7 75%); background-size: 400px 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+        .skeleton-line { height: 14px; margin-bottom: 10px; }
+        .skeleton-line.wide { width: 80%; }
+        .skeleton-line.mid  { width: 55%; }
+        .skeleton-line.short{ width: 35%; }
+        .skeleton-block { height: 80px; margin-bottom: 16px; }
+
+        /* Notificação badge */
+        .notif-badge { position: absolute; top: -4px; right: -4px; background: #E53E3E; color: white; font-size: 9px; font-weight: 800; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; border: 2px solid var(--infra-dark); }
+
+        /* Busca — highlight de resultado */
+        .search-match { background: #fef08a; border-radius: 2px; padding: 0 1px; }
+
+        /* Cards com transição suave */
+        .secao-card { background: white; border-radius: 8px; border: 1px solid #e4e7ec; margin-bottom: 1.25rem; overflow: hidden; transition: box-shadow var(--transition); }
+        .secao-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .secao-header { background: #f8f9fb; border-bottom: 1px solid #e4e7ec; padding: 10px 16px; font-size: var(--txt-xs); font-weight: 700; color: #7a7a7a; text-transform: uppercase; letter-spacing: .06em; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Item sidebar com transição */
+        .item-sidebar-container { transition: background var(--transition); }
+
+        /* Modal padronizado */
+        .modal-std-box { background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(13,33,55,0.20); overflow: hidden; border: 1px solid var(--ui-border); }
+        .modal-std-header { background: var(--infra-dark); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--infra-green); }
+        .modal-std-title { font-size: var(--txt-sm); font-weight: 800; color: white; text-transform: uppercase; letter-spacing: .08em; }
+        .modal-std-sub { font-size: var(--txt-xs); color: #6b90a8; margin-top: 2px; }
+        .modal-std-body { padding: 20px; overflow-y: auto; }
+        .icon-btn { color: #7a7a7a; transition: all 0.2s; cursor: pointer; background: none; border: none; outline: none; }
         .icon-btn:hover { color: var(--infra-green); transform: scale(1.1); }
-        #painel-rolagem { scrollbar-gutter: stable; overflow-y: auto; background-color: #f1f5f9; }
+        #painel-rolagem { scrollbar-gutter: stable; overflow-y: auto; background-color: #f2f4f7; }
         .folha-a4 { background: white; width: 210mm; min-height: 297mm; padding: 20mm; margin: 20px auto; box-shadow: 0 0 20px rgba(0,0,0,0.05); color: #333; position: relative; }
         .folha-a4 div { white-space: pre-wrap; word-wrap: break-word; }
         .header-infra { text-align: center; margin-bottom: 20px; }
@@ -60,58 +124,57 @@
         .relatorio-titulo { text-align: center; font-size: 11pt; margin-top: 10px; text-transform: uppercase; font-weight: normal; }
         .data-extenso { text-align: right; margin: 15px 0; font-size: 10pt; }
         .doc-section { margin-top: 5px; page-break-inside: avoid; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
-        .doc-item-header { background-color: #f3f4f6; padding: 6px 12px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+        .doc-item-header { background-color: #f2f4f7; padding: 6px 12px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
         .doc-item-title { font-weight: bold; text-transform: uppercase; font-size: 10pt; color: #000; }
         .doc-label { font-weight: bold; text-transform: uppercase; font-size: 9pt; color: #555; margin-top: 5px; margin-bottom: 2px; display: block; }
         .doc-content { margin-bottom: 5px; padding-left: 5px; font-size: 10pt; color: #333; }
-        .btn-menu-original { background-color: #1abc9c; color: white; border-radius: 4px; padding: 6px; }
-        .secao-card { background: white; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem; overflow: hidden; }
-        .secao-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 16px; font-size: 11px; font-weight: normal; color: var(--infra-blue); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
-        .textarea-processo { padding: 16px; min-height: 100px; outline: none; color: #475569; white-space: pre-wrap; line-height: 1.6; font-size: 14px; }
-        .header-especial-full { background-color: #1e293b; padding: 10px 16px; font-size: 10px; font-weight: 900; color: white; text-transform: uppercase; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between; }
-        .print-indicator { color: #cbd5e1; transition: opacity 0.2s; opacity: 0; }
+        .btn-menu-original { background-color: #2e8b57; color: white; border-radius: 4px; padding: 6px; }
+        #report-toolbar { position: fixed; top: 20px; right: 40px; display: none; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 20px; border: 1px solid #e4e7ec; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; }
+        .textarea-processo { padding: 16px; min-height: 100px; outline: none; color: #3c3c3c; white-space: pre-wrap; line-height: 1.7; font-size: var(--txt-base); font-family: inherit; }
+        .header-especial-full { background-color: #0d2137; padding: 10px 16px; font-size: 10px; font-weight: 900; color: white; text-transform: uppercase; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between; }
+        .print-indicator { color: #cdd1d8; transition: opacity 0.2s; opacity: 0; }
         .item-sidebar-container:hover .print-indicator { opacity: 1; }
-        .print-indicator.print-active { opacity: 1 !important; color: #ef4444 !important; }
-        .handle { cursor: grab !important; color: #cbd5e1; }
-        .btn-add-mini { background-color: #1abc9c; color: white; border-radius: 4px; padding: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; }
-        .input-prefix-container { display: flex; align-items: center; border: 1px solid #e2e8f0; border-radius: 0.25rem; padding-left: 8px; background-color: #f8fafc; }
-        .prefix-text { color: #94a3b8; font-size: 0.875rem; white-space: nowrap; user-select: none; padding-right: 4px; }
+        .print-indicator.print-active { opacity: 1 !important; color: #E53E3E !important; }
+        .handle { cursor: grab !important; color: #cdd1d8; }
+        .btn-add-mini { background-color: #2e8b57; color: white; border-radius: 4px; padding: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; }
+        .input-prefix-container { display: flex; align-items: center; border: 1px solid #e4e7ec; border-radius: 0.25rem; padding-left: 8px; background-color: #f8f9fb; }
+        .prefix-text { color: #b0b4bb; font-size: 0.875rem; white-space: nowrap; user-select: none; padding-right: 4px; }
         @media print { .no-print { display: none !important; } #main-app { display: block; } .folha-a4 { margin: 0; box-shadow: none; width: 100%; } }
 
         /* Loading */
-        #loading-screen { position: fixed; inset: 0; background: #1e293b; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
-        #loading-screen p { color: #94a3b8; font-size: 13px; font-family: sans-serif; }
-        .spinner { width: 40px; height: 40px; border: 3px solid rgba(26,188,156,0.2); border-top-color: #1abc9c; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        #loading-screen { position: fixed; inset: 0; background: #0d2137; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+        #loading-screen p { color: #b0b4bb; font-size: 13px; font-family: sans-serif; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(46,139,87,0.12); border-top-color: #2e8b57; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Sync badge */
-        #sync-status { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #94a3b8; font-size: 11px; padding: 4px 14px; border-radius: 20px; z-index: 999; font-family: sans-serif; display: flex; align-items: center; gap: 6px; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
+        #sync-status { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #0d2137; color: #b0b4bb; font-size: 11px; padding: 4px 14px; border-radius: 20px; z-index: 999; font-family: sans-serif; display: flex; align-items: center; gap: 6px; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
         #sync-status.visible { opacity: 1; }
-        #sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #1abc9c; }
-        #sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
-        #sync-dot.error { background: #ef4444; }
+        #sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #2e8b57; }
+        #sync-dot.syncing { background: #D4A800; animation: pulse 1s infinite; }
+        #sync-dot.error { background: #E53E3E; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
         /* Dashboard */
-        #painel-dash { display:none; flex:1; overflow-y:auto; background:#f1f5f9; padding:1.5rem; flex-direction:column; }
-        .dash-card { background:white; border-radius:8px; border:1px solid #e2e8f0; padding:1.1rem 1.3rem; }
+        #painel-dash { display:none; flex:1; overflow-y:auto; background:#f2f4f7; padding:1.5rem; flex-direction:column; }
+        .dash-card { background:white; border-radius:8px; border:1px solid #e4e7ec; padding:1.1rem 1.3rem; }
         .dash-kpi-valor { font-size:2.2rem; font-weight:300; line-height:1; margin-top:0.4rem; }
-        .dash-kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#94a3b8; font-weight:600; }
+        .dash-kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#b0b4bb; font-weight:600; }
         .dash-item-row { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; cursor:pointer; transition:background .15s; font-size:12px; }
-        .dash-item-row:hover { background:#f8fafc; }
+        .dash-item-row:hover { background:#f8f9fb; }
         .dash-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
 
         /* Badge de atribuição */
-        .badge-atribuicao { font-size:11px; color:#334155; background:transparent; border:1px solid #cbd5e1; border-radius:20px; padding:2px 9px; font-weight:400; white-space:nowrap; margin-left:4px; }
-        .badge-recebida   { font-size:11px; color:#334155; background:transparent; border:1px solid #cbd5e1; border-radius:20px; padding:2px 9px; font-weight:400; white-space:nowrap; margin-left:4px; }
+        .badge-atribuicao { font-size:11px; color:#3c3c3c; background:transparent; border:1px solid #cdd1d8; border-radius:20px; padding:2px 9px; font-weight:400; white-space:nowrap; margin-left:4px; }
+        .badge-recebida   { font-size:11px; color:#3c3c3c; background:transparent; border:1px solid #cdd1d8; border-radius:20px; padding:2px 9px; font-weight:400; white-space:nowrap; margin-left:4px; }
         /* Foto avatar */
         #user-avatar-sidebar { cursor:pointer; transition: opacity .2s; }
         #user-avatar-sidebar:hover { opacity: 0.8; }
         /* Dropdown usuário no header */
         #user-switch-wrap { display:none; align-items:center; gap:6px; }
         #user-switch-wrap.on { display:flex; }
-        #user-switch-select { font-size:11px; padding:5px 8px; border:1.5px solid #e2e8f0; border-radius:6px; background:white; color:#334155; outline:none; cursor:pointer; max-width:160px; }
-        #user-switch-select:focus { border-color:#7c3aed; }
+        #user-switch-select { font-size:11px; padding:5px 8px; border:1.5px solid #e4e7ec; border-radius:6px; background:white; color:#3c3c3c; outline:none; cursor:pointer; max-width:160px; }
+        #user-switch-select:focus { border-color:#1a4d8f; }
 
         /* AUTH OVERLAY */
         #auth-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; font-family: 'Montserrat', sans-serif; }
@@ -120,30 +183,30 @@
         .auth-panel-img-logo { display:none; }
         .auth-panel-img-sub { display:none; }
         .auth-panel-img-tagline { display:none; }
-        .auth-panel-form { flex: 4; background: #fff; display: flex; align-items: center; justify-content: center; overflow-y: auto; }
+        .auth-panel-form { flex: 4; background: #fff; display: flex; align-items: center; justify-content: center; overflow-y: auto; border-left: 4px solid var(--infra-green); }
         .auth-box { width: 360px; padding: 40px 20px; }
         .auth-logo { text-align:left; margin-bottom:32px; padding-left: 46px; }
         .auth-logo img { width:100%; max-width:220px; height:auto; object-fit:contain; }
-        .auth-page-title { text-align:center; font-size:18px; font-weight:600; color:#1e293b; margin-bottom:6px; }
-        .auth-page-sub { text-align:center; font-size:13px; color:#64748b; margin-bottom:24px; }
+        .auth-page-title { text-align:center; font-size:18px; font-weight:600; color:#0d2137; margin-bottom:6px; }
+        .auth-page-sub { text-align:center; font-size:13px; color:#7a7a7a; margin-bottom:24px; }
         .auth-field { margin-bottom:16px; }
-        .auth-label { display:block; font-size:12px; font-weight:600; color:#334155; margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
-        .auth-input-wrap { display:flex; height:46px; border:1.5px solid #cbd5e1; border-radius:6px; overflow:hidden; background:#fff; transition:border-color .3s, box-shadow .3s; }
-        .auth-input-wrap:focus-within { border-color:#14b8a6; box-shadow:0 0 0 3px rgba(20,184,166,.15); }
-        .auth-icon { width:46px; background:#f8fafc; border-right:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; color:#94a3b8; }
-        .auth-input-wrap input, .auth-input-wrap select { flex:1; border:none; outline:none; padding:0 14px; font-size:14px; font-family:'Montserrat',sans-serif; color:#1e293b; background:transparent; }
+        .auth-label { display:block; font-size:12px; font-weight:600; color:#3c3c3c; margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
+        .auth-input-wrap { display:flex; height:46px; border:1.5px solid #cdd1d8; border-radius:6px; overflow:hidden; background:#fff; transition:border-color .3s, box-shadow .3s; }
+        .auth-input-wrap:focus-within { border-color:#2e8b57; box-shadow:0 0 0 3px rgba(20,184,166,.15); }
+        .auth-icon { width:46px; background:#f8f9fb; border-right:1.5px solid #cdd1d8; display:flex; align-items:center; justify-content:center; color:#b0b4bb; }
+        .auth-input-wrap input, .auth-input-wrap select { flex:1; border:none; outline:none; padding:0 14px; font-size:14px; font-family:'Montserrat',sans-serif; color:#0d2137; background:transparent; }
         .auth-input-wrap select { cursor:pointer; appearance:none; }
         .auth-sel-wrap { position:relative; flex:1; display:flex; }
-        .auth-sel-arrow { position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:#94a3b8; font-size:20px; }
-        .auth-btn { width:100%; height:48px; background:#1e3a8a; color:#fff; border:none; border-radius:24px; font-size:15px; font-weight:600; font-family:'Montserrat',sans-serif; cursor:pointer; margin-top:16px; transition:background .2s, transform .1s; }
-        .auth-btn:hover { background:#172554; transform:translateY(-1px); }
+        .auth-sel-arrow { position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:#b0b4bb; font-size:20px; }
+        .auth-btn { width:100%; height:48px; background:var(--infra-dark); color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:600; font-family:'Montserrat',sans-serif; cursor:pointer; margin-top:16px; transition:background .2s, transform .1s; letter-spacing:.04em; }
+        .auth-btn:hover { background:var(--infra-mid); transform:translateY(-1px); box-shadow: 0 4px 14px rgba(13,33,55,0.3); }
         .auth-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-        .auth-links { margin-top:24px; text-align:center; font-size:13px; color:#64748b; }
-        .auth-link { color:#14b8a6; font-weight:700; cursor:pointer; }
+        .auth-links { margin-top:24px; text-align:center; font-size:13px; color:#7a7a7a; }
+        .auth-link { color:#2e8b57; font-weight:700; cursor:pointer; }
         .auth-link:hover { text-decoration:underline; }
         .auth-err { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:12px; display:none; }
         .auth-err.on { display:block; }
-        .auth-ok { background:#f0fdf4; border:1px solid #bbf7d0; color:#16a34a; padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:12px; display:none; }
+        .auth-ok { background:rgba(46,139,87,0.06); border:1px solid #bbf7d0; color:#16a34a; padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:12px; display:none; }
         .auth-ok.on { display:block; }
         .auth-spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; display:inline-block; vertical-align:middle; }
         #auth-cad { display:none; }
@@ -162,8 +225,8 @@
         .modal-admin-box { background:white; border-radius:12px; padding:0; width:700px; max-width:100%; max-height:85vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
 
         /* Admin nav item especial */
-        .nav-item-admin { background: rgba(124,58,237,0.15); border-left: 3px solid #7c3aed; }
-        .nav-item-admin:hover { background: rgba(124,58,237,0.25) !important; }
+        .nav-item-admin { border-left: 3px solid var(--infra-green); }
+        .nav-item-admin:hover { background: rgba(26,188,156,0.08) !important; }
 
         /* MOBILE */
         @media (max-width: 1023px) {
@@ -177,7 +240,7 @@
             #topo-app h1 { font-size: 13px !important; }
             #topo-app .text-\[13px\] { font-size: 10px !important; }
             #topo-app .text-\[11px\] { display: none; }
-            #topo-app .text-slate-300 { display: none; }
+            #topo-app .text-[#cdd1d8] { display: none; }
             #topo-app .flex.gap-2 { display: none !important; }
             #user-switch-wrap { display: none !important; }
             #main-app > div.flex.flex-col > div.flex.flex-1 { position: relative !important; flex: 1 !important; overflow: hidden !important; display: block !important; }
@@ -188,30 +251,30 @@
             #painel-dash .dash-inner { padding: 0.75rem !important; box-sizing: border-box; width: 100%; }
             #painel-dash .dash-inner > * { max-width: 100%; box-sizing: border-box; }
         }
-        #bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid #334155; height: var(--bottom-nav-h); z-index: 100; display: none; align-items: center; justify-content: space-around; padding-bottom: var(--safe-bottom); }
+        #bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--infra-dark); border-top: 1px solid #1a3a5c; height: var(--bottom-nav-h); z-index: 100; display: none; align-items: center; justify-content: space-around; padding-bottom: var(--safe-bottom); }
         @media (max-width: 1023px) { #bottom-nav { display: flex; } }
         @media (max-width: 1023px) { #btn-salvar-geral { bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px) !important; right: 16px !important; } }
-        .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 12px; border: none; background: none; color: #64748b; font-size: 10px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: color .2s; min-width: 56px; }
-        .bnav-item:hover { color: #94a3b8; }
+        .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 12px; border: none; background: none; color: #7a7a7a; font-size: 10px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: color .2s; min-width: 56px; }
+        .bnav-item:hover { color: #b0b4bb; }
         .bnav-item i { width: 22px; height: 22px; }
-        .bnav-item.active { color: #1abc9c; }
-        .bnav-center { background: #1abc9c; color: white !important; border-radius: 50%; width: 52px; height: 52px; padding: 0; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(26,188,156,.4); }
+        .bnav-item.active { color: #2e8b57; }
+        .bnav-center { background: #2e8b57; color: white !important; border-radius: 50%; width: 52px; height: 52px; padding: 0; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(46,139,87,0.30); }
         .bnav-center i { width: 24px; height: 24px; }
         #filter-sheet-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:150; }
         #filter-sheet-overlay.on { display:block; }
         #filter-sheet { display:none; position:fixed; bottom:0; left:0; right:0; background:white; border-radius:20px 20px 0 0; z-index:151; padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom)); max-height:75vh; overflow-y:auto; }
         #filter-sheet.on { display:block; }
-        .sheet-handle { width:36px; height:4px; background:#e2e8f0; border-radius:2px; margin:12px auto 8px; }
-        .sheet-title { padding:8px 24px 16px; font-size:15px; font-weight:700; color:#1e293b; }
-        .sheet-option { display:flex; align-items:center; gap:10px; padding:13px 24px; font-size:13px; color:#475569; cursor:pointer; transition:background .15s; }
-        .sheet-option:hover, .sheet-option.selected { background:#f0fdf4; color:#1abc9c; font-weight:600; }
+        .sheet-handle { width:36px; height:4px; background:#e4e7ec; border-radius:2px; margin:12px auto 8px; }
+        .sheet-title { padding:8px 24px 16px; font-size:15px; font-weight:700; color:#0d2137; }
+        .sheet-option { display:flex; align-items:center; gap:10px; padding:13px 24px; font-size:13px; color:#4a4a4a; cursor:pointer; transition:background .15s; }
+        .sheet-option:hover, .sheet-option.selected { background:rgba(46,139,87,0.06); color:#2e8b57; font-weight:600; }
         .sheet-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-        .sheet-section-label { padding:8px 24px 4px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.08em; }
+        .sheet-section-label { padding:8px 24px 4px; font-size:10px; font-weight:800; color:#b0b4bb; text-transform:uppercase; letter-spacing:.08em; }
         .sheet-select-row { display:flex; gap:8px; padding:0 24px 16px; }
-        .sheet-select-row select { flex:1; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:13px; background:white; color:#334155; outline:none; }
+        .sheet-select-row select { flex:1; padding:10px 12px; border:1.5px solid #e4e7ec; border-radius:8px; font-size:13px; background:white; color:#3c3c3c; outline:none; }
         .sheet-search { padding:0 24px 16px; }
-        .sheet-search input { width:100%; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:13px; outline:none; color:#334155; transition:border-color .2s; }
-        .sheet-search input:focus { border-color:#1abc9c; }
+        .sheet-search input { width:100%; padding:10px 14px; border:1.5px solid #e4e7ec; border-radius:8px; font-size:13px; outline:none; color:#3c3c3c; transition:border-color .2s; }
+        .sheet-search input:focus { border-color:#2e8b57; }
         @media (max-width: 1023px) {
             .nav-item { padding: 14px 24px !important; }
             .nav-subitem { padding: 14px 24px 14px 60px !important; }
@@ -353,12 +416,12 @@
         <input type="text" id="busca-rapida-mobile" oninput="MobileUI.syncBusca(this.value)" onkeydown="if(event.key==='Enter'){MobileUI.closeFilterSheet();MobileUI.navLista();}" placeholder="🔍 Pesquisar demanda..." style="font-size:16px;">
     </div>
     <div class="sheet-section-label">Status</div>
-    <div class="sheet-option selected" data-status="todos" onclick="MobileUI.setStatus('todos',this)"><span class="sheet-dot" style="background:#94a3b8"></span> Todos</div>
-    <div class="sheet-option" data-status="urgente" onclick="MobileUI.setStatus('urgente',this)"><span class="sheet-dot" style="background:#ef4444"></span> Urgente</div>
-    <div class="sheet-option" data-status="pendente" onclick="MobileUI.setStatus('pendente',this)"><span class="sheet-dot" style="background:#facc15"></span> Pendente</div>
-    <div class="sheet-option" data-status="andamento" onclick="MobileUI.setStatus('andamento',this)"><span class="sheet-dot" style="background:#3b82f6"></span> Em Andamento</div>
-    <div class="sheet-option" data-status="aguardando" onclick="MobileUI.setStatus('aguardando',this)"><span class="sheet-dot" style="background:#e2e8f0;border:1px solid #cbd5e1"></span> Aguardando</div>
-    <div class="sheet-option" data-status="concluido" onclick="MobileUI.setStatus('concluido',this)"><span class="sheet-dot" style="background:#10b981"></span> Concluído</div>
+    <div class="sheet-option selected" data-status="todos" onclick="MobileUI.setStatus('todos',this)"><span class="sheet-dot" style="background:#b0b4bb"></span> Todos</div>
+    <div class="sheet-option" data-status="urgente" onclick="MobileUI.setStatus('urgente',this)"><span class="sheet-dot" style="background:#E53E3E"></span> Urgente</div>
+    <div class="sheet-option" data-status="pendente" onclick="MobileUI.setStatus('pendente',this)"><span class="sheet-dot" style="background:#FFD000"></span> Pendente</div>
+    <div class="sheet-option" data-status="andamento" onclick="MobileUI.setStatus('andamento',this)"><span class="sheet-dot" style="background:#1a4d8f"></span> Em Andamento</div>
+    <div class="sheet-option" data-status="aguardando" onclick="MobileUI.setStatus('aguardando',this)"><span class="sheet-dot" style="background:#e4e7ec;border:1px solid #cdd1d8"></span> Aguardando</div>
+    <div class="sheet-option" data-status="concluido" onclick="MobileUI.setStatus('concluido',this)"><span class="sheet-dot" style="background:#27784a"></span> Concluído</div>
     <div class="sheet-section-label" style="margin-top:8px;">Ordenação</div>
     <div class="sheet-select-row">
         <select id="sort-order-mobile" onchange="MobileUI.syncOrdem(this.value)">
@@ -368,9 +431,9 @@
     </div>
     <!-- g) Troca de usuário no mobile (só admin) -->
     <div id="mobile-user-switch-wrap" style="display:none;">
-        <div class="sheet-section-label" style="margin-top:8px;color:#7c3aed;">Visualizar como</div>
+        <div class="sheet-section-label" style="margin-top:8px;color:#1a4d8f;">Visualizar como</div>
         <div class="sheet-select-row">
-            <select id="user-switch-select-mobile" onchange="ImpersonationEngine.entrar(this.value);MobileUI.closeFilterSheet();" style="accent-color:#7c3aed;">
+            <select id="user-switch-select-mobile" onchange="ImpersonationEngine.entrar(this.value);MobileUI.closeFilterSheet();" style="accent-color:#1a4d8f;">
                 <option value="__admin__">— Administrador —</option>
             </select>
         </div>
@@ -380,59 +443,66 @@
 <!-- Report toolbar -->
 <div id="report-toolbar" class="no-print">
     <button onclick="RenderEngine.copiarTexto()" class="icon-btn" title="Copiar Conteúdo"><i data-lucide="copy"></i></button>
-    <button id="btn-pdf-trigger" class="icon-btn text-emerald-600" title="Gerar PDF"><i data-lucide="file-text"></i></button>
+    <button id="btn-pdf-trigger" class="icon-btn text-[#27784a]" title="Gerar PDF"><i data-lucide="file-text"></i></button>
     <div class="w-px h-6 bg-slate-200 mx-1"></div>
     <button onclick="Navigation.voltarParaApp()" class="icon-btn text-red-500" title="Fechar"><i data-lucide="x"></i></button>
 </div>
 
 <!-- ═══ MODAL DE ATRIBUIÇÃO ═══ -->
 <div id="modal-atribuicao" class="modal-atrib hidden">
-    <div class="modal-atrib-box" style="width:480px;max-height:85vh;overflow-y:auto;">
-        <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">Atribuir Demanda</h3>
-        <p id="atrib-nome-demanda" style="font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:20px;"></p>
+    <div class="modal-atrib-box modal-std-box" style="width:480px;max-height:85vh;overflow-y:auto;">
+        <div class="modal-std-header">
+            <div>
+                <div class="modal-std-title">Atribuir Demanda</div>
+                <div id="atrib-nome-demanda" class="modal-std-sub"></div>
+            </div>
+            <button onclick="AtribuicaoEngine.fechar()" style="color:#4a4a4a;background:none;border:none;cursor:pointer;padding:4px;" onmouseover="this.style.color='#E53E3E'" onmouseout="this.style.color='#4a4a4a'"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
+        </div>
+        <div style="padding:20px;">
 
         <!-- Destinatário -->
         <div style="margin-bottom:16px;">
-            <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;display:block;margin-bottom:8px;">Atribuir para</label>
-            <select id="atrib-usuario-select" onchange="AtribuicaoEngine.onUsuarioChange()" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;color:#334155;">
+            <label style="font-size:var(--txt-xs);font-weight:700;color:#3c3c3c;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px;">Atribuir para</label>
+            <select id="atrib-usuario-select" onchange="AtribuicaoEngine.onUsuarioChange()" style="width:100%;padding:10px 14px;border:1.5px solid #cdd1d8;border-radius:8px;font-size:var(--txt-base);outline:none;color:#3c3c3c;transition:border-color var(--transition);" onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#cdd1d8'">
                 <option value="">Selecione um usuário...</option>
             </select>
         </div>
 
         <!-- Pendências com checkboxes -->
         <div id="atrib-pendencias-wrap" style="display:none;margin-bottom:16px;">
-            <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;display:block;margin-bottom:8px;">Selecione as pendências a incluir</label>
-            <div id="atrib-pendencias-lista" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;"></div>
-            <div style="font-size:10px;color:#94a3b8;margin-top:6px;">Pendências já atribuídas a outros usuários estão bloqueadas.</div>
+            <label style="font-size:var(--txt-xs);font-weight:700;color:#3c3c3c;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px;">Selecione as pendências a incluir</label>
+            <div id="atrib-pendencias-lista" style="border:1px solid #e4e7ec;border-radius:8px;overflow:hidden;"></div>
+            <div style="font-size:var(--txt-xs);color:#b0b4bb;margin-top:6px;">Pendências já atribuídas a outros usuários estão bloqueadas.</div>
         </div>
 
-        <!-- Toggle manter visível — só aparece se nenhuma pendência for selecionada -->
-        <div id="atrib-manter-wrap" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:20px;">
+        <!-- Toggle manter visível -->
+        <div id="atrib-manter-wrap" style="background:#f8f9fb;border:1px solid #e4e7ec;border-radius:8px;padding:14px;margin-bottom:20px;">
             <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
-                <input type="checkbox" id="atrib-manter-visivel" checked style="margin-top:2px;width:16px;height:16px;accent-color:#1abc9c;">
+                <input type="checkbox" id="atrib-manter-visivel" checked style="margin-top:2px;width:16px;height:16px;accent-color:#2e8b57;">
                 <div>
-                    <div style="font-size:13px;font-weight:600;color:#334155;">Manter visível para mim após atribuir</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Se desmarcado, a demanda sumirá da sua lista e ficará apenas com o destinatário.</div>
+                    <div style="font-size:var(--txt-base);font-weight:600;color:#3c3c3c;">Manter visível para mim após atribuir</div>
+                    <div style="font-size:var(--txt-xs);color:#b0b4bb;margin-top:2px;">Se desmarcado, a demanda sumirá da sua lista.</div>
                 </div>
             </label>
         </div>
 
         <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button onclick="AtribuicaoEngine.fechar()" style="padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;background:white;">Cancelar</button>
-            <button onclick="AtribuicaoEngine.confirmar()" style="padding:10px 20px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Atribuir</button>
+            <button onclick="AtribuicaoEngine.fechar()" style="padding:10px 20px;border:1px solid #e4e7ec;border-radius:8px;font-size:var(--txt-sm);color:#7a7a7a;cursor:pointer;background:white;transition:background var(--transition);" onmouseover="this.style.background='#f8f9fb'" onmouseout="this.style.background='white'">Cancelar</button>
+            <button onclick="AtribuicaoEngine.confirmar()" style="padding:10px 24px;background:#2e8b57;color:white;border:none;border-radius:8px;font-size:var(--txt-sm);font-weight:700;cursor:pointer;transition:opacity var(--transition);" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Atribuir</button>
+        </div>
         </div>
     </div>
 </div>
 
 <!-- ═══ MODAL ADMIN ═══ -->
 <div id="modal-admin" class="modal-admin hidden">
-    <div class="modal-admin-box">
-        <div style="background:#1e293b;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+    <div class="modal-admin-box modal-std-box">
+        <div class="modal-std-header">
             <div>
-                <div style="font-size:13px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:.08em;">Painel Administrativo</div>
-                <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Visão geral de todos os usuários e demandas</div>
+                <div class="modal-std-title">Painel Administrativo</div>
+                <div class="modal-std-sub">Visão geral de todos os usuários e demandas</div>
             </div>
-            <button onclick="AdminEngine.fechar()" style="color:#94a3b8;background:none;border:none;cursor:pointer;"><i data-lucide="x" style="width:20px;height:20px;"></i></button>
+            <button onclick="AdminEngine.fechar()" style="color:#4a4a4a;background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;transition:color var(--transition);" onmouseover="this.style.color='#E53E3E'" onmouseout="this.style.color='#4a4a4a'"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
         </div>
         <div id="admin-content" style="overflow-y:auto;flex:1;padding:20px;"></div>
     </div>
@@ -440,9 +510,9 @@
 
 <div id="main-app">
     <aside id="sidebar-infra" class="no-print">
-        <div class="p-4 border-b border-slate-700 flex flex-col items-center">
+        <div class="p-4 border-b border-[#1a3a5c] flex flex-col items-center" style="border-bottom:1px solid rgba(46,139,87,0.25)!important;">
             <div class="mb-3 relative cursor-pointer group" onclick="document.getElementById('input-foto').click()" title="Clique para alterar foto">
-                <div id="user-avatar-sidebar" style="width:48px;height:48px;border-radius:50%;background:#1abc9c;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;border:2px solid #1abc9c;overflow:hidden;">?</div>
+                <div id="user-avatar-sidebar" style="width:48px;height:48px;border-radius:50%;background:#2e8b57;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;border:2px solid #2e8b57;overflow:hidden;">?</div>
                 <div class="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                     <i data-lucide="camera" style="width:14px;height:14px;color:white;"></i>
                 </div>
@@ -450,76 +520,86 @@
             </div>
             <div class="user-info text-center">
                 <p id="user-name-sidebar" class="text-xs font-bold uppercase tracking-wider"></p>
-                <p id="user-role-sidebar" class="text-[10px] text-slate-400 mt-1"></p>
-                <p id="user-area-sidebar" class="text-[9px] text-slate-500 mt-0.5"></p>
+                <p id="user-role-sidebar" class="text-[10px] text-[#b0b4bb] mt-1"></p>
+                <p id="user-area-sidebar" class="text-[9px] text-[#888] mt-0.5"></p>
             </div>
         </div>
         <nav class="flex-1 mt-4">
-            <div onclick="DashEngine.abrir();MobileUI.closeDrawer();" class="nav-item" title="Dashboard"><i data-lucide="layout-dashboard" class="w-5 h-5 text-sky-400 mr-3"></i><span class="nav-text text-sm">Dashboard</span></div>
-            <div onclick="Navigation.toggleSubmenu('sub-rel')" class="nav-item" title="Relatórios"><i data-lucide="printer" class="w-5 h-5 text-emerald-400 mr-3"></i><span class="nav-text text-sm">Relatórios</span><i data-lucide="chevron-down" class="w-4 h-4 ml-auto chevron-icon"></i></div>
+            <div onclick="DashEngine.abrir();MobileUI.closeDrawer();" class="nav-item" title="Dashboard"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i><span class="nav-text">Dashboard</span></div>
+            <div onclick="Navigation.toggleSubmenu('sub-rel')" class="nav-item" title="Relatórios"><i data-lucide="printer" class="w-5 h-5 mr-3"></i><span class="nav-text">Relatórios</span><i data-lucide="chevron-down" class="w-4 h-4 ml-auto chevron-icon"></i></div>
             <div id="sub-rel" class="submenu">
                 <div onclick="RenderEngine.renderizarPadraoExecutivo();MobileUI.closeDrawer();" class="nav-subitem">Padrão</div>
                 <div onclick="RenderEngine.renderizarSimplificado();MobileUI.closeDrawer();" class="nav-subitem">Simplificado</div>
             </div>
-            <div onclick="AppEngine.exportarBackup();MobileUI.closeDrawer();" class="nav-item" title="Exportar Dados"><i data-lucide="download-cloud" class="w-5 h-5 text-amber-400 mr-3"></i><span class="nav-text text-sm">Exportar Dados</span></div>
-            <label class="nav-item cursor-pointer" title="Importar Backup" onclick="MobileUI.closeDrawer();"><i data-lucide="upload-cloud" class="w-5 h-5 text-blue-400 mr-3"></i><span class="nav-text text-sm">Importar Backup</span><input type="file" class="hidden" accept=".json" onchange="AppEngine.importarBackup(event)"></label>
+            <div onclick="AppEngine.exportarBackup();MobileUI.closeDrawer();" class="nav-item" title="Exportar Dados"><i data-lucide="download-cloud" class="w-5 h-5 mr-3"></i><span class="nav-text">Exportar Dados</span></div>
+            <label class="nav-item cursor-pointer" title="Importar Backup" onclick="MobileUI.closeDrawer();"><i data-lucide="upload-cloud" class="w-5 h-5 mr-3"></i><span class="nav-text">Importar Backup</span><input type="file" class="hidden" accept=".json" onchange="AppEngine.importarBackup(event)"></label>
             <div id="nav-admin-item" class="hidden">
-                <div onclick="AdminEngine.abrir();MobileUI.closeDrawer();" class="nav-item nav-item-admin" title="Painel Admin"><i data-lucide="shield" class="w-5 h-5 mr-3" style="color:#a78bfa;"></i><span class="nav-text text-sm" style="color:#a78bfa;">Painel Admin</span></div>
+                <div onclick="AdminEngine.abrir();MobileUI.closeDrawer();" class="nav-item nav-item-admin" title="Painel Admin" style="position:relative;">
+                    <i data-lucide="shield" class="w-5 h-5 mr-3"></i>
+                    <span class="nav-text">Painel Admin</span>
+                    <span id="notif-badge-admin" class="notif-badge hidden">0</span>
+                </div>
             </div>
-            <div class="mt-6 border-t border-slate-700 pt-4">
-                <div class="px-6 mb-2 config-label text-[10px] font-black text-slate-500 uppercase tracking-widest">Configurações</div>
-                <div onclick="Navigation.toggleModal('modal-gestao');MobileUI.closeDrawer();" class="nav-item"><i data-lucide="component" class="w-5 h-5 text-slate-400 mr-3"></i><span class="nav-text text-sm">Gestão</span></div>
-                <div onclick="Navigation.toggleModal('modal-titulo');MobileUI.closeDrawer();" class="nav-item"><i data-lucide="type" class="w-5 h-5 text-slate-400 mr-3"></i><span class="nav-text text-sm">Área de Trabalho</span></div>
+            <div class="mt-6 border-t border-[#1a3a5c] pt-4">
+                <div class="px-5 mb-2 config-label" style="font-size:var(--txt-xs);font-weight:800;color:#3c3c3c;text-transform:uppercase;letter-spacing:.1em;">Configurações</div>
+                <div onclick="Navigation.toggleModal('modal-gestao');MobileUI.closeDrawer();" class="nav-item"><i data-lucide="settings-2" class="w-5 h-5 mr-3"></i><span class="nav-text">Gestão</span></div>
+                <div onclick="Navigation.toggleModal('modal-titulo');MobileUI.closeDrawer();" class="nav-item"><i data-lucide="type" class="w-5 h-5 mr-3"></i><span class="nav-text">Área de Trabalho</span></div>
             </div>
         </nav>
-        <div class="border-t border-slate-700 p-3">
-            <div onclick="Navigation.confirmarSaida()" class="nav-item" title="Sair" style="padding:10px 24px;color:#f87171;"><i data-lucide="log-out" class="w-5 h-5 mr-3" style="color:#f87171;"></i><span class="nav-text text-sm">Sair</span></div>
+        <div class="border-t border-[#1a3a5c] p-3">
+            <div onclick="Navigation.confirmarSaida()" class="nav-item" title="Sair" style="padding:10px 20px;color:#f87171;"><i data-lucide="log-out" class="w-5 h-5 mr-3" style="color:#f87171;"></i><span class="nav-text">Sair</span></div>
         </div>
     </aside>
 
     <div class="flex flex-col overflow-hidden">
-        <header id="topo-app" class="bg-[#f3f3f3] border-b p-4 shadow-sm z-10 no-print flex justify-between items-center">
+        <header id="topo-app" class="bg-white border-b z-10 no-print flex justify-between items-center" style="padding:12px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
             <div class="flex items-center gap-4">
                 <button onclick="Navigation.toggleSidebar()" class="btn-menu-original"><i data-lucide="menu" class="w-5 h-5"></i></button>
                 <div>
-                    <h1 class="text-slate-700 text-lg font-normal uppercase leading-tight">SGD - SISTEMA DE GESTÃO DE DEMANDAS</h1>
-                    <div class="flex items-center gap-2 mt-0.5 text-slate-500">
-                        <span id="display-subtitulo" class="text-[11px] font-normal uppercase tracking-wider"></span>
-                        <span class="text-slate-300">|</span>
-                        <p class="text-[13px] font-normal uppercase"><span id="display-semana"></span> | <span id="display-periodo"></span></p>
+                    <h1 style="font-size:var(--txt-base);font-weight:700;color:#0d2137;text-transform:uppercase;letter-spacing:.06em;line-height:1.2;">SGD — Sistema de Gestão de Demandas</h1>
+                    <div class="flex items-center gap-2 mt-0.5" style="color:#b0b4bb;">
+                        <span id="display-subtitulo" style="font-size:var(--txt-xs);text-transform:uppercase;letter-spacing:.06em;"></span>
+                        <span style="opacity:.4;">·</span>
+                        <span id="display-semana" style="font-size:var(--txt-xs);text-transform:uppercase;"></span>
+                        <span style="opacity:.4;">·</span>
+                        <span id="display-periodo" style="font-size:var(--txt-xs);text-transform:uppercase;"></span>
                     </div>
                 </div>
             </div>
             <div class="flex gap-2 items-center">
-                <!-- f) Dropdown de usuários — só visível para admin -->
+                <!-- Dropdown de usuários — só visível para admin -->
                 <div id="user-switch-wrap" class="items-center gap-1">
-                    <i data-lucide="users" style="width:14px;height:14px;color:#7c3aed;flex-shrink:0;"></i>
-                    <select id="user-switch-select" onchange="ImpersonationEngine.entrar(this.value)" title="Visualizar como outro usuário">
+                    <i data-lucide="users" style="width:14px;height:14px;color:#2e8b57;flex-shrink:0;"></i>
+                    <select id="user-switch-select" onchange="ImpersonationEngine.entrar(this.value)" title="Visualizar como outro usuário" style="font-size:var(--txt-xs);padding:6px 10px;border:1.5px solid #e4e7ec;border-radius:8px;background:white;color:#3c3c3c;outline:none;cursor:pointer;max-width:160px;transition:border-color var(--transition);" onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#e4e7ec'">
                         <option value="__admin__">— Administrador —</option>
                     </select>
                 </div>
-                <select id="sort-order" onchange="RenderEngine.renderListas()" class="text-[10px] p-2 border rounded bg-white font-normal outline-none"><option value="asc">A-Z</option><option value="desc">Z-A</option></select>
-                <select id="filter-status" onchange="RenderEngine.renderListas()" class="text-[10px] p-2 border rounded bg-white font-normal outline-none">
-                    <option value="todos">STATUS</option>
-                    <option value="urgente">🔴 URGENTE</option>
-                    <option value="pendente">🟡 PENDENTE</option>
-                    <option value="andamento">🔵 ANDAMENTO</option>
-                    <option value="aguardando">⚪ AGUARDANDO</option>
-                    <option value="concluido">🟢 CONCLUÍDO</option>
+                <select id="sort-order" onchange="RenderEngine.renderListas()" style="font-size:var(--txt-xs);padding:6px 10px;border:1.5px solid #e4e7ec;border-radius:8px;background:white;color:#3c3c3c;outline:none;transition:border-color var(--transition);" onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#e4e7ec'"><option value="asc">A–Z</option><option value="desc">Z–A</option></select>
+                <select id="filter-status" onchange="RenderEngine.renderListas()" style="font-size:var(--txt-xs);padding:6px 10px;border:1.5px solid #e4e7ec;border-radius:8px;background:white;color:#3c3c3c;outline:none;transition:border-color var(--transition);" onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#e4e7ec'">
+                    <option value="todos">Todos</option>
+                    <option value="urgente">🔴 Urgente</option>
+                    <option value="pendente">🟡 Pendente</option>
+                    <option value="andamento">🔵 Andamento</option>
+                    <option value="aguardando">⚪ Aguardando</option>
+                    <option value="concluido">🟢 Concluído</option>
                 </select>
-                <input type="text" id="busca-rapida" oninput="RenderEngine.renderListas()" placeholder="Pesquisar..." class="pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none">
+                <div style="position:relative;">
+                    <input type="text" id="busca-rapida" oninput="RenderEngine.renderListas()" placeholder="Pesquisar..." style="padding:6px 12px 6px 32px;background:white;border:1.5px solid #e4e7ec;border-radius:8px;font-size:var(--txt-xs);outline:none;width:180px;transition:border-color var(--transition),width var(--transition);" onfocus="this.style.borderColor='#2e8b57';this.style.width='220px'" onblur="this.style.borderColor='#e4e7ec';this.style.width='180px'">
+                    <i data-lucide="search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#b0b4bb;pointer-events:none;"></i>
+                    <span id="busca-count" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;color:#2e8b57;font-weight:700;"></span>
+                </div>
             </div>
         </header>
         <div class="flex flex-1 overflow-hidden">
             <aside id="sidebar-listas" class="w-80 border-r bg-white flex flex-col no-print">
                 <div class="overflow-y-auto flex-1" id="sidebar-listas-scroll">
-                    <div class="p-3 bg-slate-50 text-[10px] font-black border-b flex justify-between items-center text-slate-400 group/title">
+                    <div class="p-3 bg-[#f8f9fb] text-[10px] font-black border-b flex justify-between items-center text-[#b0b4bb] group/title">
                         <div class="flex items-center gap-2">
                             <span>TRATATIVAS ATIVAS</span>
-                            <button onclick="RenderEngine.toggleTodasImpressoes()" class="opacity-0 group-hover/title:opacity-100 transition-opacity hover:text-emerald-500" title="Alternar todas"><i data-lucide="layers" class="w-3 h-3"></i></button>
+                            <button onclick="RenderEngine.toggleTodasImpressoes()" class="opacity-0 group-hover/title:opacity-100 transition-opacity hover:text-[#2e8b57]" title="Alternar todas"><i data-lucide="layers" class="w-3 h-3"></i></button>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="btn-olho-admin" onclick="RenderEngine.toggleVisaoAdmin()" class="hidden" title="Alternar visão: todas as demandas / apenas minhas" style="color:#94a3b8;background:none;border:none;cursor:pointer;padding:2px;transition:color .2s;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#94a3b8'">
+                            <button id="btn-olho-admin" onclick="RenderEngine.toggleVisaoAdmin()" class="hidden" title="Alternar visão: todas as demandas / apenas minhas" style="color:#b0b4bb;background:none;border:none;cursor:pointer;padding:2px;transition:color .2s;" onmouseover="this.style.color='#1a4d8f'" onmouseout="this.style.color='#b0b4bb'">
                                 <i id="icone-olho-admin" data-lucide="eye" class="w-3.5 h-3.5"></i>
                             </button>
                             <span id="count-ativas" class="mr-1 font-normal text-[10px]">0/0</span>
@@ -530,7 +610,7 @@
                     <div class="header-especial-full"><div class="font-normal">ACOMPANHAMENTO ESPECIAL</div><span id="count-especial" class="font-normal text-[10px]">0/0</span></div>
                     <nav id="lista-especial" class="min-h-[100px]"></nav>
                     <div id="btn-topo-lista" style="display:none;justify-content:center;padding:16px 16px calc(var(--bottom-nav-h) + var(--safe-bottom, 0px) + 24px);">
-                        <button onclick="document.getElementById('sidebar-listas').scrollTop=0" style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;"><i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo</button>
+                        <button onclick="document.getElementById('sidebar-listas').scrollTop=0" style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#0d2137;color:#b0b4bb;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;"><i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo</button>
                     </div>
                 </div>
             </aside>
@@ -549,7 +629,7 @@
             <input type="text" id="input-semana" placeholder="Semana" class="w-full p-2 border rounded text-sm">
             <input type="text" id="input-periodo" placeholder="Período" class="w-full p-2 border rounded text-sm">
         </div>
-        <div class="flex justify-end gap-2 mt-6"><button onclick="Navigation.toggleModal('modal-gestao')" class="px-4 py-2 text-sm">Cancelar</button><button onclick="AppEngine.salvarConfig()" class="px-4 py-2 text-sm bg-emerald-600 text-white rounded font-bold">SALVAR</button></div>
+        <div class="flex justify-end gap-2 mt-6"><button onclick="Navigation.toggleModal('modal-gestao')" class="px-4 py-2 text-sm">Cancelar</button><button onclick="AppEngine.salvarConfig()" class="px-4 py-2 text-sm bg-[#27784a] text-white rounded font-bold">SALVAR</button></div>
     </div>
 </div>
 <div id="modal-titulo" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden" style="padding:16px;">
@@ -558,11 +638,11 @@
         <div class="space-y-4">
             <div class="input-prefix-container"><span id="prefixo-titulo" class="prefix-text"></span><input type="text" id="input-titulo-comp" class="flex-1 p-2 text-sm outline-none bg-transparent"></div>
         </div>
-        <div class="flex justify-end gap-2 mt-6"><button onclick="Navigation.toggleModal('modal-titulo')" class="px-4 py-2 text-sm">Cancelar</button><button onclick="AppEngine.salvarConfig()" class="px-4 py-2 text-sm bg-emerald-600 text-white rounded font-bold">SALVAR</button></div>
+        <div class="flex justify-end gap-2 mt-6"><button onclick="Navigation.toggleModal('modal-titulo')" class="px-4 py-2 text-sm">Cancelar</button><button onclick="AppEngine.salvarConfig()" class="px-4 py-2 text-sm bg-[#27784a] text-white rounded font-bold">SALVAR</button></div>
     </div>
 </div>
 
-<button id="btn-salvar-geral" onclick="AppEngine.salvarAlteracoesPagina()" class="fixed bottom-8 right-8 bg-emerald-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-xs flex items-center gap-2 z-50 no-print hidden">
+<button id="btn-salvar-geral" onclick="AppEngine.salvarAlteracoesPagina()" class="fixed bottom-8 right-8 bg-[#27784a] text-white px-6 py-3 rounded-full shadow-2xl font-bold text-xs flex items-center gap-2 z-50 no-print hidden">
     <i data-lucide="save" class="w-4 h-4"></i><span>SALVAR  <kbd style="font-size:9px;opacity:0.7;font-family:monospace;">Alt+S</kbd></span>
 </button>
 
@@ -795,15 +875,15 @@ window.AtribuicaoEngine = {
             const jaAtribuida = p.atribuidoPara && p.atribuidoPara !== uid;
             const foto = p.atribuidoParaFoto
                 ? `<img src="${p.atribuidoParaFoto}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
-                : (jaAtribuida ? `<span style="width:22px;height:22px;border-radius:50%;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;flex-shrink:0;">${(p.atribuidoParaNome||'?')[0].toUpperCase()}</span>` : '');
+                : (jaAtribuida ? `<span style="width:22px;height:22px;border-radius:50%;background:#1a4d8f;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;flex-shrink:0;">${(p.atribuidoParaNome||'?')[0].toUpperCase()}</span>` : '');
             const bloqueada = jaAtribuida;
-            return `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;${bloqueada?'opacity:0.5;cursor:not-allowed;':'cursor:pointer;'}${i===passos.length-1?'border-bottom:none;':''}">
+            return `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f2f4f7;${bloqueada?'opacity:0.5;cursor:not-allowed;':'cursor:pointer;'}${i===passos.length-1?'border-bottom:none;':''}">
                 <input type="checkbox" data-idx="${i}" ${bloqueada?'disabled':''}
                     onchange="AtribuicaoEngine.onPendenciaChange()"
-                    style="width:15px;height:15px;accent-color:#7c3aed;flex-shrink:0;">
-                <span style="flex:1;font-size:13px;color:#334155;">${p.texto}</span>
+                    style="width:15px;height:15px;accent-color:#1a4d8f;flex-shrink:0;">
+                <span style="flex:1;font-size:13px;color:#3c3c3c;">${p.texto}</span>
                 ${foto}
-                ${jaAtribuida ? `<span style="font-size:10px;color:#7c3aed;font-weight:600;white-space:nowrap;">${p.atribuidoParaNome||''}</span>` : ''}
+                ${jaAtribuida ? `<span style="font-size:10px;color:#1a4d8f;font-weight:600;white-space:nowrap;">${p.atribuidoParaNome||''}</span>` : ''}
             </label>`;
         }).join('');
 
@@ -1039,7 +1119,7 @@ window.AdminEngine = {
     async abrir() {
         document.getElementById('modal-admin').classList.remove('hidden');
         const content = document.getElementById('admin-content');
-        content.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;font-size:13px;">Carregando...</div>';
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#b0b4bb;font-size:13px;">Carregando...</div>';
 
         const [usuarios, todasDemandas] = await Promise.all([
             StorageService.getTodosUsuarios(),
@@ -1050,17 +1130,17 @@ window.AdminEngine = {
 
         // Estatísticas globais
         html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:3px solid #1abc9c;border-radius:8px;padding:14px;">
-                <div style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:700;">Usuários</div>
-                <div style="font-size:28px;font-weight:300;color:#1abc9c;">${usuarios.length}</div>
+            <div style="background:#f8f9fb;border:1px solid #e4e7ec;border-top:3px solid #2e8b57;border-radius:8px;padding:14px;">
+                <div style="font-size:10px;text-transform:uppercase;color:#b0b4bb;font-weight:700;">Usuários</div>
+                <div style="font-size:28px;font-weight:300;color:#2e8b57;">${usuarios.length}</div>
             </div>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:3px solid #3b82f6;border-radius:8px;padding:14px;">
-                <div style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:700;">Total Demandas</div>
-                <div style="font-size:28px;font-weight:300;color:#3b82f6;">${todasDemandas.length}</div>
+            <div style="background:#f8f9fb;border:1px solid #e4e7ec;border-top:3px solid #1a4d8f;border-radius:8px;padding:14px;">
+                <div style="font-size:10px;text-transform:uppercase;color:#b0b4bb;font-weight:700;">Total Demandas</div>
+                <div style="font-size:28px;font-weight:300;color:#1a4d8f;">${todasDemandas.length}</div>
             </div>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:3px solid #7c3aed;border-radius:8px;padding:14px;">
-                <div style="font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:700;">Atribuições</div>
-                <div style="font-size:28px;font-weight:300;color:#7c3aed;">${todasDemandas.filter(d=>d.atribuidoPara).length}</div>
+            <div style="background:#f8f9fb;border:1px solid #e4e7ec;border-top:3px solid #1a4d8f;border-radius:8px;padding:14px;">
+                <div style="font-size:10px;text-transform:uppercase;color:#b0b4bb;font-weight:700;">Atribuições</div>
+                <div style="font-size:28px;font-weight:300;color:#1a4d8f;">${todasDemandas.filter(d=>d.atribuidoPara).length}</div>
             </div>
         </div>`;
 
@@ -1070,62 +1150,62 @@ window.AdminEngine = {
             const recebidas = todasDemandas.filter(d => d.atribuidoPara === u.uid && d.criadoPor !== u.uid);
 
             const badgeRole = u.role === 'admin'
-                ? `<span style="font-size:9px;background:#7c3aed;color:white;padding:1px 7px;border-radius:10px;font-weight:700;">ADMIN</span>`
-                : `<span style="font-size:9px;background:#e2e8f0;color:#64748b;padding:1px 7px;border-radius:10px;font-weight:700;">USUÁRIO</span>`;
+                ? `<span style="font-size:9px;background:#1a4d8f;color:white;padding:1px 7px;border-radius:10px;font-weight:700;">ADMIN</span>`
+                : `<span style="font-size:9px;background:#e4e7ec;color:#7a7a7a;padding:1px 7px;border-radius:10px;font-weight:700;">USUÁRIO</span>`;
 
             // Dados serializados para o botão de edição
             const dadosEsc = encodeURIComponent(JSON.stringify({ uid: u.uid, nome: u.nome, email: u.email, area: u.area || '', role: u.role || 'user' }));
 
-            html += `<div style="background:white;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:16px;overflow:hidden;">
-                <div style="background:#f8fafc;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;">
+            html += `<div style="background:white;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:16px;overflow:hidden;">
+                <div style="background:#f8f9fb;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e4e7ec;">
                     <div style="display:flex;align-items:center;gap:10px;">
-                        <div style="width:34px;height:34px;border-radius:50%;background:#1abc9c;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;">${u.nome ? u.nome[0].toUpperCase() : '?'}</div>
+                        <div style="width:34px;height:34px;border-radius:50%;background:#2e8b57;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;">${u.nome ? u.nome[0].toUpperCase() : '?'}</div>
                         <div>
-                            <div style="font-size:13px;font-weight:700;color:#1e293b;">${u.nome} ${badgeRole}</div>
-                            <div style="font-size:11px;color:#64748b;">${u.email} · ${u.area || ''}</div>
+                            <div style="font-size:13px;font-weight:700;color:#0d2137;">${u.nome} ${badgeRole}</div>
+                            <div style="font-size:11px;color:#7a7a7a;">${u.email} · ${u.area || ''}</div>
                         </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:12px;">
-                        <div style="font-size:11px;color:#94a3b8;">${demandasDoUsuario.length} demanda(s) própria(s) · ${recebidas.length} recebida(s)</div>
+                        <div style="font-size:11px;color:#b0b4bb;">${demandasDoUsuario.length} demanda(s) própria(s) · ${recebidas.length} recebida(s)</div>
                         <button onclick="AdminEngine.abrirEdicaoUsuario('${dadosEsc}')"
                             title="Editar dados do usuário"
-                            style="display:flex;align-items:center;gap:5px;padding:5px 12px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;color:#475569;cursor:pointer;font-weight:600;transition:all .15s;white-space:nowrap;"
-                            onmouseover="this.style.borderColor='#1abc9c';this.style.color='#1abc9c';"
-                            onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#475569';">
+                            style="display:flex;align-items:center;gap:5px;padding:5px 12px;background:white;border:1px solid #e4e7ec;border-radius:8px;font-size:11px;color:#4a4a4a;cursor:pointer;font-weight:600;transition:all .15s;white-space:nowrap;"
+                            onmouseover="this.style.borderColor='#2e8b57';this.style.color='#2e8b57';"
+                            onmouseout="this.style.borderColor='#e4e7ec';this.style.color='#4a4a4a';">
                             <i data-lucide="pencil" style="width:13px;height:13px;"></i> Editar
                         </button>
                     </div>
                 </div>`;
 
             if (demandasDoUsuario.length === 0 && recebidas.length === 0) {
-                html += `<div style="padding:14px 16px;font-size:12px;color:#94a3b8;">Nenhuma demanda.</div>`;
+                html += `<div style="padding:14px 16px;font-size:12px;color:#b0b4bb;">Nenhuma demanda.</div>`;
             }
 
             if (demandasDoUsuario.length > 0) {
-                html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:800;text-transform:uppercase;color:#94a3b8;letter-spacing:.06em;">PRÓPRIAS</div>`;
+                html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:800;text-transform:uppercase;color:#b0b4bb;letter-spacing:.06em;">PRÓPRIAS</div>`;
                 demandasDoUsuario.forEach(d => {
-                    const STATUS_COLOR = { urgente:'#ef4444', pendente:'#facc15', andamento:'#3b82f6', aguardando:'#94a3b8', concluido:'#10b981' };
-                    const cor = STATUS_COLOR[d.status] || '#94a3b8';
+                    const STATUS_COLOR = { urgente:'#E53E3E', pendente:'#FFD000', andamento:'#1a4d8f', aguardando:'#b0b4bb', concluido:'#27784a' };
+                    const cor = STATUS_COLOR[d.status] || '#b0b4bb';
                     const atribInfo = d.atribuidoPara
-                        ? `<span style="font-size:9px;color:#7c3aed;background:#ede9fe;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:6px;">→ ${d.atribuidoParaNome && d.atribuidoParaNome !== 'undefined' ? d.atribuidoParaNome : usuarios.find(u=>u.uid===d.atribuidoPara)?.nome || d.atribuidoPara}</span>`
+                        ? `<span style="font-size:9px;color:#1a4d8f;background:rgba(26,77,143,0.08);padding:1px 6px;border-radius:4px;font-weight:700;margin-left:6px;">→ ${d.atribuidoParaNome && d.atribuidoParaNome !== 'undefined' ? d.atribuidoParaNome : usuarios.find(u=>u.uid===d.atribuidoPara)?.nome || d.atribuidoPara}</span>`
                         : '';
-                    html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid #f8fafc;">
+                    html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid #f8f9fb;">
                         <span style="width:8px;height:8px;border-radius:50%;background:${cor};flex-shrink:0;"></span>
-                        <span style="font-size:12px;color:#1e293b;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nome}${atribInfo}</span>
+                        <span style="font-size:12px;color:#0d2137;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nome}${atribInfo}</span>
                         <span style="font-size:10px;color:${cor};font-weight:700;flex-shrink:0;">${(d.status||'').toUpperCase()}</span>
                     </div>`;
                 });
             }
 
             if (recebidas.length > 0) {
-                html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:800;text-transform:uppercase;color:#0891b2;letter-spacing:.06em;">RECEBIDAS</div>`;
+                html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:800;text-transform:uppercase;color:#1a4d8f;letter-spacing:.06em;">RECEBIDAS</div>`;
                 recebidas.forEach(d => {
-                    const STATUS_COLOR = { urgente:'#ef4444', pendente:'#facc15', andamento:'#3b82f6', aguardando:'#94a3b8', concluido:'#10b981' };
-                    const cor = STATUS_COLOR[d.status] || '#94a3b8';
-                    const criadorInfo = `<span style="font-size:9px;color:#0891b2;background:#e0f2fe;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:6px;">← ${d.criadoPorNome && d.criadoPorNome !== 'undefined' ? d.criadoPorNome : usuarios.find(u=>u.uid===d.criadoPor)?.nome || d.criadoPor}</span>`;
-                    html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid #f8fafc;">
+                    const STATUS_COLOR = { urgente:'#E53E3E', pendente:'#FFD000', andamento:'#1a4d8f', aguardando:'#b0b4bb', concluido:'#27784a' };
+                    const cor = STATUS_COLOR[d.status] || '#b0b4bb';
+                    const criadorInfo = `<span style="font-size:9px;color:#1a4d8f;background:rgba(26,77,143,0.08);padding:1px 6px;border-radius:4px;font-weight:700;margin-left:6px;">← ${d.criadoPorNome && d.criadoPorNome !== 'undefined' ? d.criadoPorNome : usuarios.find(u=>u.uid===d.criadoPor)?.nome || d.criadoPor}</span>`;
+                    html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid #f8f9fb;">
                         <span style="width:8px;height:8px;border-radius:50%;background:${cor};flex-shrink:0;"></span>
-                        <span style="font-size:12px;color:#1e293b;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nome}${criadorInfo}</span>
+                        <span style="font-size:12px;color:#0d2137;text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nome}${criadorInfo}</span>
                         <span style="font-size:10px;color:${cor};font-weight:700;flex-shrink:0;">${(d.status||'').toUpperCase()}</span>
                     </div>`;
                 });
@@ -1156,37 +1236,37 @@ window.AdminEngine = {
         const areaOpts = AREAS.map(a => `<option value="${a}" ${u.area===a?'selected':''}>${a}</option>`).join('');
         m.innerHTML = `
         <div style="background:white;border-radius:12px;width:420px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
-            <div style="background:#1e293b;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="background:#0d2137;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
                 <div style="font-size:13px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:.07em;">Editar Usuário</div>
-                <button onclick="document.getElementById('modal-edit-usuario').style.display='none'" style="color:#94a3b8;background:none;border:none;cursor:pointer;font-size:20px;line-height:1;">×</button>
+                <button onclick="document.getElementById('modal-edit-usuario').style.display='none'" style="color:#b0b4bb;background:none;border:none;cursor:pointer;font-size:20px;line-height:1;">×</button>
             </div>
             <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
                 <div>
-                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Nome Completo</label>
+                    <label style="font-size:11px;font-weight:700;color:#3c3c3c;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Nome Completo</label>
                     <input id="edit-u-nome" type="text" value="${u.nome || ''}"
-                        style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;color:#1e293b;outline:none;box-sizing:border-box;"
-                        onfocus="this.style.borderColor='#1abc9c'" onblur="this.style.borderColor='#cbd5e1'">
+                        style="width:100%;padding:10px 14px;border:1.5px solid #cdd1d8;border-radius:8px;font-size:14px;color:#0d2137;outline:none;box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#cdd1d8'">
                 </div>
                 <div>
-                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">E-mail</label>
+                    <label style="font-size:11px;font-weight:700;color:#3c3c3c;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">E-mail</label>
                     <input id="edit-u-email" type="email" value="${u.email || ''}" disabled
-                        style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;color:#94a3b8;outline:none;box-sizing:border-box;background:#f8fafc;"
+                        style="width:100%;padding:10px 14px;border:1.5px solid #e4e7ec;border-radius:8px;font-size:14px;color:#b0b4bb;outline:none;box-sizing:border-box;background:#f8f9fb;"
                         title="O e-mail não pode ser alterado aqui">
-                    <div style="font-size:10px;color:#94a3b8;margin-top:4px;">O e-mail é gerenciado pelo Firebase Authentication e não pode ser alterado aqui.</div>
+                    <div style="font-size:10px;color:#b0b4bb;margin-top:4px;">O e-mail é gerenciado pelo Firebase Authentication e não pode ser alterado aqui.</div>
                 </div>
                 <div>
-                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Área / Lotação</label>
+                    <label style="font-size:11px;font-weight:700;color:#3c3c3c;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Área / Lotação</label>
                     <select id="edit-u-area"
-                        style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;color:#1e293b;outline:none;box-sizing:border-box;background:white;cursor:pointer;"
-                        onfocus="this.style.borderColor='#1abc9c'" onblur="this.style.borderColor='#cbd5e1'">
+                        style="width:100%;padding:10px 14px;border:1.5px solid #cdd1d8;border-radius:8px;font-size:14px;color:#0d2137;outline:none;box-sizing:border-box;background:white;cursor:pointer;"
+                        onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#cdd1d8'">
                         ${areaOpts}
                     </select>
                 </div>
                 <div>
-                    <label style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Perfil</label>
+                    <label style="font-size:11px;font-weight:700;color:#3c3c3c;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;">Perfil</label>
                     <select id="edit-u-role"
-                        style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;color:#1e293b;outline:none;box-sizing:border-box;background:white;cursor:pointer;"
-                        onfocus="this.style.borderColor='#1abc9c'" onblur="this.style.borderColor='#cbd5e1'">
+                        style="width:100%;padding:10px 14px;border:1.5px solid #cdd1d8;border-radius:8px;font-size:14px;color:#0d2137;outline:none;box-sizing:border-box;background:white;cursor:pointer;"
+                        onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#cdd1d8'">
                         <option value="user" ${u.role==='user'?'selected':''}>Usuário</option>
                         <option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option>
                     </select>
@@ -1194,11 +1274,11 @@ window.AdminEngine = {
                 <div id="edit-u-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:10px 14px;border-radius:8px;font-size:12px;"></div>
                 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
                     <button onclick="document.getElementById('modal-edit-usuario').style.display='none'"
-                        style="padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;background:white;">
+                        style="padding:10px 20px;border:1px solid #e4e7ec;border-radius:8px;font-size:13px;color:#7a7a7a;cursor:pointer;background:white;">
                         Cancelar
                     </button>
                     <button onclick="AdminEngine.salvarEdicaoUsuario('${u.uid}')"
-                        style="padding:10px 24px;background:#1abc9c;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+                        style="padding:10px 24px;background:#2e8b57;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
                         Salvar
                     </button>
                 </div>
@@ -1284,7 +1364,7 @@ window.AppEngine = {
         } else {
             const nome = this.currentUser?.nome || '?';
             av.innerHTML = nome[0].toUpperCase();
-            av.style.background = '#1abc9c';
+            av.style.background = '#2e8b57';
         }
     },
 
@@ -1460,22 +1540,22 @@ window.DashEngine = {
         const db = AppEngine.db;
         const STATUS_ORDER = ['urgente','pendente','andamento','aguardando','concluido'];
         const STATUS_LABEL = { urgente:'Urgente', pendente:'Pendente', andamento:'Em Andamento', aguardando:'Aguardando', concluido:'Concluído' };
-        const STATUS_COLOR = { urgente:'#ef4444', pendente:'#facc15', andamento:'#3b82f6', aguardando:'#94a3b8', concluido:'#10b981' };
+        const STATUS_COLOR = { urgente:'#E53E3E', pendente:'#FFD000', andamento:'#1a4d8f', aguardando:'#b0b4bb', concluido:'#27784a' };
         const total = db.length;
         const cont = {};
         STATUS_ORDER.forEach(s => cont[s] = db.filter(i => i.status === s).length);
         const kpis = [
-            { label:'Total de Demandas', valor:total, cor:'#1abc9c', borda:'#1abc9c', status:null },
-            { label:'Em Tratamento', valor:(cont.andamento + cont.pendente + cont.urgente), cor:'#3b82f6', borda:'#3b82f6', status:null },
-            { label:'Aguardando', valor:cont.aguardando, cor:'#94a3b8', borda:'#94a3b8', status:'aguardando' },
-            { label:'Concluídas', valor:cont.concluido, cor:'#10b981', borda:'#10b981', status:'concluido' },
+            { label:'Total de Demandas', valor:total, cor:'#2e8b57', borda:'#2e8b57', status:null },
+            { label:'Em Tratamento', valor:(cont.andamento + cont.pendente + cont.urgente), cor:'#1a4d8f', borda:'#1a4d8f', status:null },
+            { label:'Aguardando', valor:cont.aguardando, cor:'#b0b4bb', borda:'#b0b4bb', status:'aguardando' },
+            { label:'Concluídas', valor:cont.concluido, cor:'#27784a', borda:'#27784a', status:'concluido' },
         ];
         const urgentes = db.filter(i => i.status === 'urgente');
         const prioritarias = STATUS_ORDER.filter(s => s !== 'urgente').flatMap(s => db.filter(i => i.status === s));
         const rowItem = (i) =>
             `<div class="dash-item-row" onclick="DashEngine.fechar();RenderEngine.abrirDetalhes('${i.id}')">
                 <span class="dash-dot" style="background:${STATUS_COLOR[i.status]};"></span>
-                <span style="text-transform:uppercase;font-size:11px;color:#1e293b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i.nome}</span>
+                <span style="text-transform:uppercase;font-size:11px;color:#0d2137;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i.nome}</span>
                 <span style="font-size:9px;color:${STATUS_COLOR[i.status]};font-weight:600;margin-left:8px;flex-shrink:0;">${STATUS_LABEL[i.status]}</span>
             </div>`;
         painel.innerHTML = `
@@ -1492,15 +1572,15 @@ window.DashEngine = {
         </style>
         <div class="dash-inner" style="flex:1;display:flex;flex-direction:column;padding:1.2rem;min-height:0;">
             <div style="margin-bottom:1rem;flex-shrink:0;">
-                <p style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin:0;">ANALYTICS DE PERFORMANCE</p>
-                <p style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin:2px 0 0;">STATUS GERAL DAS DEMANDAS ${(AppEngine.config.subtitulo||'').toUpperCase()}</p>
+                <p style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7a7a7a;margin:0;">ANALYTICS DE PERFORMANCE</p>
+                <p style="font-size:10px;color:#b0b4bb;text-transform:uppercase;letter-spacing:.07em;margin:2px 0 0;">STATUS GERAL DAS DEMANDAS ${(AppEngine.config.subtitulo||'').toUpperCase()}</p>
             </div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1rem;flex-shrink:0;" class="dash-kpi-grid-mobile">
                 ${kpis.map(k => `
                 <div class="dash-card" onclick="${k.status ? `DashEngine.filtrarEAbrir('${k.status}')` : ''}" style="border-top:3px solid ${k.borda};${k.status?'cursor:pointer;':''}">
                     <div class="dash-kpi-label">${k.label}</div>
                     <div class="dash-kpi-valor" style="color:${k.cor};">${k.valor}</div>
-                    ${k.status?`<div style="font-size:9px;color:#94a3b8;margin-top:4px;">clique para filtrar</div>`:''}
+                    ${k.status?`<div style="font-size:9px;color:#b0b4bb;margin-top:4px;">clique para filtrar</div>`:''}
                 </div>`).join('')}
             </div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;flex:1;min-height:0;" id="dash-bottom-grid">
@@ -1508,22 +1588,22 @@ window.DashEngine = {
                     <p class="dash-kpi-label" style="margin-bottom:.8rem;">Distribuição de Status</p>
                     <div style="position:relative;width:100%;padding-bottom:72%;">
                         <svg viewBox="0 0 300 300" style="position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);">
-                        ${(()=>{ const Rv=132,CXv=150,CYv=150,Cv=2*Math.PI*Rv; let a='',ov=0; STATUS_ORDER.forEach(s=>{ if(!cont[s])return; const d=(cont[s]/(total||1))*Cv; const corFatia = s === 'aguardando' ? '#e2e8f0' : STATUS_COLOR[s]; a+=`<circle cx="${CXv}" cy="${CYv}" r="${Rv}" fill="none" stroke="${corFatia}" stroke-width="34" stroke-dasharray="${d} ${Cv-d}" stroke-dashoffset="${-ov}"/>`; ov+=d; }); return a; })()}
+                        ${(()=>{ const Rv=132,CXv=150,CYv=150,Cv=2*Math.PI*Rv; let a='',ov=0; STATUS_ORDER.forEach(s=>{ if(!cont[s])return; const d=(cont[s]/(total||1))*Cv; const corFatia = s === 'aguardando' ? '#e4e7ec' : STATUS_COLOR[s]; a+=`<circle cx="${CXv}" cy="${CYv}" r="${Rv}" fill="none" stroke="${corFatia}" stroke-width="34" stroke-dasharray="${d} ${Cv-d}" stroke-dashoffset="${-ov}"/>`; ov+=d; }); return a; })()}
                         </svg>
-                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:300;color:#334155;">${total}</div>
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:300;color:#3c3c3c;">${total}</div>
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:5px 14px;justify-content:center;margin-top:.8rem;">
-                        ${STATUS_ORDER.filter(s=>cont[s]).map(s=>`<span style="display:flex;align-items:center;gap:6px;font-size:10px;color:#64748b;"><span style="width:10px;height:10px;border-radius:50%;background:${s==='aguardando'?'#e2e8f0':STATUS_COLOR[s]};${s==='aguardando'?'border:1px solid #cbd5e1;':''}display:inline-block;flex-shrink:0;"></span><span style="text-transform:uppercase;font-weight:600;font-size:9px;">${STATUS_LABEL[s]}</span></span>`).join('')}
+                        ${STATUS_ORDER.filter(s=>cont[s]).map(s=>`<span style="display:flex;align-items:center;gap:6px;font-size:10px;color:#7a7a7a;"><span style="width:10px;height:10px;border-radius:50%;background:${s==='aguardando'?'#e4e7ec':STATUS_COLOR[s]};${s==='aguardando'?'border:1px solid #cdd1d8;':''}display:inline-block;flex-shrink:0;"></span><span style="text-transform:uppercase;font-weight:600;font-size:9px;">${STATUS_LABEL[s]}</span></span>`).join('')}
                     </div>
                 </div>
                 <div style="grid-column:3/5;display:flex;flex-direction:column;gap:.8rem;min-height:0;">
                     <div class="dash-card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
                         <p class="dash-kpi-label" style="margin-bottom:.5rem;flex-shrink:0;">Próximas Ações Recomendadas</p>
-                        <div style="overflow-y:auto;flex:1;">${urgentes.length?urgentes.map(i=>rowItem(i)).join(''):`<p style="font-size:11px;color:#94a3b8;padding:8px 10px;">Nenhuma demanda urgente.</p>`}</div>
+                        <div style="overflow-y:auto;flex:1;">${urgentes.length?urgentes.map(i=>rowItem(i)).join(''):`<p style="font-size:11px;color:#b0b4bb;padding:8px 10px;">Nenhuma demanda urgente.</p>`}</div>
                     </div>
                     <div class="dash-card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
                         <p class="dash-kpi-label" style="margin-bottom:.5rem;flex-shrink:0;">Demandas Prioritárias</p>
-                        <div style="overflow-y:auto;flex:1;">${prioritarias.length?prioritarias.map(i=>rowItem(i)).join(''):`<p style="font-size:11px;color:#94a3b8;padding:8px 10px;">Nenhuma demanda.</p>`}</div>
+                        <div style="overflow-y:auto;flex:1;">${prioritarias.length?prioritarias.map(i=>rowItem(i)).join(''):`<p style="font-size:11px;color:#b0b4bb;padding:8px 10px;">Nenhuma demanda.</p>`}</div>
                     </div>
                 </div>
             </div>
@@ -1586,7 +1666,8 @@ window.Navigation = {
 // RENDER ENGINE
 // ─────────────────────────────────────────────
 window.RenderEngine = {
-    _visaoAdmin: true, // true = vê tudo | false = só as próprias
+    _visaoAdmin: true,
+    _abrindo: false,
 
     renderListas() {
         const busca = document.getElementById('busca-rapida').value.toLowerCase();
@@ -1594,8 +1675,22 @@ window.RenderEngine = {
         const ordem = document.getElementById('sort-order').value;
         this._renderSecao('ativa', 'lista-ativa', busca, status, ordem);
         this._renderSecao('especial', 'lista-especial', busca, status, ordem);
-        document.getElementById('count-ativas').innerText = `${AppEngine.db.filter(i => (i.grupo||'ativa') === 'ativa').length}/${AppEngine.db.length}`;
-        document.getElementById('count-especial').innerText = `${AppEngine.db.filter(i => i.grupo === 'especial').length}/${AppEngine.db.length}`;
+        const total = AppEngine.db.length;
+        const visiveis = AppEngine.db.filter(i => {
+            const nm = i.nome.toLowerCase().includes(busca);
+            const pr = (i.processo||'').toLowerCase().includes(busca);
+            const ps = normalizarPassos(i.passos||[]).some(p=>(p.texto||'').toLowerCase().includes(busca));
+            const stOk = status === 'todos' || i.status === status;
+            return (nm||pr||ps) && stOk;
+        }).length;
+        document.getElementById('count-ativas').innerText = `${AppEngine.db.filter(i=>(i.grupo||'ativa')==='ativa').length}/${total}`;
+        document.getElementById('count-especial').innerText = `${AppEngine.db.filter(i=>i.grupo==='especial').length}/${total}`;
+        // Busca counter
+        const countEl = document.getElementById('busca-count');
+        if (countEl) {
+            if (busca) { countEl.textContent = visiveis; countEl.style.display = 'block'; }
+            else { countEl.style.display = 'none'; }
+        }
         lucide.createIcons();
     },
 
@@ -1606,7 +1701,7 @@ window.RenderEngine = {
             icone.setAttribute('data-lucide', this._visaoAdmin ? 'eye' : 'eye-off');
             const btn = document.getElementById('btn-olho-admin');
             btn.title = this._visaoAdmin ? 'Visão: todas as demandas — clique para ver só as suas' : 'Visão: só as suas demandas — clique para ver todas';
-            btn.style.color = this._visaoAdmin ? '#94a3b8' : '#7c3aed';
+            btn.style.color = this._visaoAdmin ? '#b0b4bb' : '#1a4d8f';
         }
         lucide.createIcons();
         this.renderListas();
@@ -1651,15 +1746,20 @@ window.RenderEngine = {
         container.innerHTML = '';
         let items = AppEngine.db.filter(i => (i.grupo || 'ativa') === grupo);
 
-        // Filtro do olho: admin com olho fechado vê só as próprias
-        // Demandas sem criadoPor (criadas antes do multiusuário) são tratadas como do admin
         const isAdmin = AppEngine.isAdmin && !ImpersonationEngine._ativo;
+        const adminUid = AppEngine.currentUser?.uid;
+
+        // Filtro do olho: fechado = só as próprias demandas do admin
         if (isAdmin && !this._visaoAdmin) {
-            const uid = AppEngine.currentUser?.uid;
-            items = items.filter(i => !i.criadoPor || i.criadoPor === uid);
+            items = items.filter(i => !i.criadoPor || i.criadoPor === adminUid);
         }
 
-        if (busca) items = items.filter(i => i.nome.toLowerCase().includes(busca));
+        if (busca) items = items.filter(i => {
+            const nomMatch   = i.nome.toLowerCase().includes(busca);
+            const procMatch  = (i.processo||'').toLowerCase().includes(busca);
+            const passMatch  = normalizarPassos(i.passos||[]).some(p => (p.texto||'').toLowerCase().includes(busca));
+            return nomMatch || procMatch || passMatch;
+        });
         if (filtro !== 'todos') items = items.filter(i => i.status === filtro);
         items.sort((a, b) => ordem === 'asc' ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome));
         items.forEach(p => {
@@ -1667,13 +1767,13 @@ window.RenderEngine = {
                              p.status === 'pendente' ? 'bg-yellow-400' :
                              p.status === 'andamento' ? 'bg-blue-500' :
                              p.status === 'aguardando' ? 'bg-white border border-slate-300' :
-                             p.status === 'concluido' ? 'bg-emerald-500' : 'bg-slate-300';
+                             p.status === 'concluido' ? 'bg-[#2e8b57]' : 'bg-slate-300';
             const div = document.createElement('div');
-            div.className = `p-4 border-b flex justify-between items-center cursor-pointer hover:bg-slate-50 item-sidebar-container ${AppEngine.itemAtivoId === p.id ? 'item-active' : ''}`;
+            div.className = `p-4 border-b flex justify-between items-center cursor-pointer hover:bg-[#f8f9fb] item-sidebar-container ${AppEngine.itemAtivoId === p.id ? 'item-active' : ''}`;
             div.setAttribute('data-id', p.id);
             div.onclick = () => { DashEngine.fechar(); this.abrirDetalhes(p.id); };
             const badge = this._badgeAtribuicao(p);
-            div.innerHTML = `<div class="flex items-center gap-2 flex-1 min-w-0"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div class="text-[11px] uppercase text-slate-700 flex items-center gap-1 flex-wrap min-w-0"><span class="truncate">${p.nome}</span>${badge}</div></div><div class="flex items-center gap-3 flex-shrink-0"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
+            div.innerHTML = `<div class="flex items-center gap-2 flex-1 min-w-0"><div class="handle text-[#cdd1d8]"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div class="text-[11px] uppercase text-slate-700 flex items-center gap-1 flex-wrap min-w-0"><span class="truncate">${p.nome}</span>${badge}</div></div><div class="flex items-center gap-3 flex-shrink-0"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
             container.appendChild(div);
         });
         Sortable.create(container, { group: 'sidebar', animation: 150, handle: '.handle', onEnd: async (e) => {
@@ -1689,11 +1789,30 @@ window.RenderEngine = {
     },
 
     async abrirDetalhes(id) {
+        // Proteção contra chamadas recursivas
+        if (this._abrindo) return;
+        this._abrindo = true;
+
         AppEngine.itemAtivoId = id;
+
         const p = AppEngine.db.find(i => i.id === id);
-        this.renderListas();
+        if (!p) {
+            this._abrindo = false;
+            return;
+        }
+
+        // Skeleton loader imediato
         const painel = document.getElementById('painel-rolagem');
+        painel.style.display = 'block';
+        document.getElementById('painel-dash').style.display = 'none';
         document.getElementById('btn-salvar-geral').classList.remove('hidden');
+        painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding:2rem 2rem 80px;">
+            <div class="skeleton skeleton-line wide" style="height:36px;margin-bottom:8px;"></div>
+            <div class="skeleton skeleton-line short" style="height:11px;margin-bottom:24px;"></div>
+            <div class="skeleton skeleton-block" style="height:120px;border-radius:8px;margin-bottom:20px;"></div>
+            <div class="skeleton skeleton-block" style="height:90px;border-radius:8px;margin-bottom:20px;"></div>
+            <div class="skeleton skeleton-block" style="height:160px;border-radius:8px;"></div>
+        </div>`;
 
         // Verifica se o usuário atual é o criador (pode atribuir/editar) ou apenas visualizador
         const viewingUid = AppEngine.currentUser?.uid;
@@ -1727,8 +1846,8 @@ window.RenderEngine = {
                     ? `${atribArr.length} usuários`
                     : resolverNome(atribArr[0], p.atribuidoParaNome);
                 atribBadgeHtml = `
-                    <span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">${nomeCriador} → ${nomeAlvo}</span>
-                    <button onclick="AtribuicaoEngine.remover('${id}')" title="Remover atribuição" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#ef4444;background:none;border:1px solid #fecaca;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:400;transition:background .15s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
+                    <span style="font-size:11px;color:#3c3c3c;font-weight:400;background:transparent;border:1px solid #cdd1d8;border-radius:20px;padding:3px 10px;">${nomeCriador} → ${nomeAlvo}</span>
+                    <button onclick="AtribuicaoEngine.remover('${id}')" title="Remover atribuição" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#E53E3E;background:none;border:1px solid #fecaca;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:400;transition:background .15s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
                         <i data-lucide="x" style="width:12px;height:12px;"></i> Remover atribuição
                     </button>`;
             } else if (euSouCriador && !euSouDestinatario) {
@@ -1737,44 +1856,44 @@ window.RenderEngine = {
                     ? `${atribArr.length} usuários`
                     : resolverNome(atribArr[0], p.atribuidoParaNome);
                 atribBadgeHtml = `
-                    <span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Atribuída para: ${nomeAlvo}</span>
-                    <button onclick="AtribuicaoEngine.remover('${id}')" style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:4px;border:1px solid #fecaca;">Remover atribuição</button>`;
+                    <span style="font-size:11px;color:#3c3c3c;font-weight:400;background:transparent;border:1px solid #cdd1d8;border-radius:20px;padding:3px 10px;">Atribuída para: ${nomeAlvo}</span>
+                    <button onclick="AtribuicaoEngine.remover('${id}')" style="font-size:10px;color:#E53E3E;background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:4px;border:1px solid #fecaca;">Remover atribuição</button>`;
             } else if (euSouDestinatario && !euSouCriador) {
                 // Destinatário vendo demanda recebida: botão devolver
                 const nomeCriador = resolverNome(p.criadoPor, p.criadoPorNome);
                 atribBadgeHtml = `
-                    <span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Recebida de: ${nomeCriador}</span>
-                    <button onclick="AtribuicaoEngine.devolver('${id}')" title="Devolver esta demanda ao remetente" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#334155;background:none;border:1px solid #cbd5e1;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:400;transition:background .15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                    <span style="font-size:11px;color:#3c3c3c;font-weight:400;background:transparent;border:1px solid #cdd1d8;border-radius:20px;padding:3px 10px;">Recebida de: ${nomeCriador}</span>
+                    <button onclick="AtribuicaoEngine.devolver('${id}')" title="Devolver esta demanda ao remetente" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#3c3c3c;background:none;border:1px solid #cdd1d8;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:400;transition:background .15s;" onmouseover="this.style.background='#f2f4f7'" onmouseout="this.style.background='none'">
                         <i data-lucide="corner-up-left" style="width:12px;height:12px;"></i> Devolver
                     </button>`;
             }
         } else if (p.criadoPor && p.criadoPor !== uid && isAdmin) {
             const nomeCriador = resolverNome(p.criadoPor, p.criadoPorNome);
-            atribBadgeHtml = `<span style="font-size:11px;color:#334155;font-weight:400;background:transparent;border:1px solid #cbd5e1;border-radius:20px;padding:3px 10px;">Por: ${nomeCriador}</span>`;
+            atribBadgeHtml = `<span style="font-size:11px;color:#3c3c3c;font-weight:400;background:transparent;border:1px solid #cdd1d8;border-radius:20px;padding:3px 10px;">Por: ${nomeCriador}</span>`;
         }
 
-        const atribBtn = canEdit ? `<button onclick="AtribuicaoEngine.abrir('${id}')" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;"><i data-lucide="user-plus" style="width:14px;height:14px;"></i> Atribuir</button>` : '';
+        const atribBtn = canEdit ? `<button onclick="AtribuicaoEngine.abrir('${id}')" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:#1a4d8f;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;"><i data-lucide="user-plus" style="width:14px;height:14px;"></i> Atribuir</button>` : '';
 
-        painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding-bottom:80px">
-            <div class="flex justify-between items-start mb-6 border-b pb-6" style="flex-wrap:wrap;gap:12px;">
-                <div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <h2 contenteditable="${canEdit}" id="edit-nome" class="text-3xl font-normal text-slate-800 outline-none uppercase" style="flex:1;">${p.nome}</h2>
-                        ${canEdit ? `<i data-lucide="pencil" style="width:16px;height:16px;color:#94a3b8;flex-shrink:0;cursor:text;" title="Clique no título para editar"></i>` : ''}
+        painel.innerHTML = `<div class="max-w-5xl mx-auto" style="padding:1.5rem 2rem 100px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid #f2f4f7;flex-wrap:wrap;gap:12px;">
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <h2 contenteditable="${canEdit}" id="edit-nome" style="font-size:var(--txt-2xl);font-weight:300;color:#091522;outline:none;text-transform:uppercase;letter-spacing:.04em;line-height:1.2;flex:1;" title="${canEdit?'Clique para editar':''}">${p.nome}</h2>
+                        ${canEdit ? `<i data-lucide="pencil" style="width:15px;height:15px;color:#cdd1d8;flex-shrink:0;cursor:text;" title="Clique no título para editar"></i>` : ''}
                     </div>
-                    <p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg} · ${p.criadoPorNome || ''}</p>
-                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">${atribBadgeHtml}</div>
+                    <p style="font-size:var(--txt-xs);color:#b0b4bb;text-transform:uppercase;letter-spacing:.06em;margin-top:6px;">Criado em ${p.dataReg}${p.criadoPorNome ? ' · ' + p.criadoPorNome : ''}</p>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">${atribBadgeHtml}</div>
                 </div>
-                <div class="flex gap-2" style="flex-wrap:wrap;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                     ${atribBtn}
-                    <select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" ${canEdit?'':'disabled'} class="p-2 border rounded font-normal text-[10px] bg-white">
-                        <option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 URGENTE</option>
-                        <option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 PENDENTE</option>
-                        <option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 ANDAMENTO</option>
-                        <option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option>
-                        <option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option>
+                    <select id="edit-status" onchange="AppEngine.salvarAlteracoesPagina()" ${canEdit?'':'disabled'} style="padding:7px 12px;border:1.5px solid #e4e7ec;border-radius:8px;font-size:var(--txt-xs);background:white;outline:none;color:#3c3c3c;cursor:${canEdit?'pointer':'not-allowed'};transition:border-color var(--transition);" onfocus="this.style.borderColor='#2e8b57'" onblur="this.style.borderColor='#e4e7ec'">
+                        <option value="urgente" ${p.status==='urgente'?'selected':''}>🔴 Urgente</option>
+                        <option value="pendente" ${p.status==='pendente'?'selected':''}>🟡 Pendente</option>
+                        <option value="andamento" ${p.status==='andamento'?'selected':''}>🔵 Em Andamento</option>
+                        <option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ Aguardando</option>
+                        <option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 Concluído</option>
                     </select>
-                    ${canEdit ? `<button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    ${canEdit ? `<button onclick="RenderEngine.excluirDemanda('${id}')" style="padding:7px;border:1.5px solid #fecaca;border-radius:8px;color:#E53E3E;background:white;cursor:pointer;display:flex;align-items:center;transition:background var(--transition);" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='white'" title="Excluir demanda"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                 </div>
             </div>
             <div class="secao-card">
@@ -1786,7 +1905,7 @@ window.RenderEngine = {
                 <div id="logs-container" class="p-4 space-y-3"></div>
                 <div id="input-log-area" class="hidden p-4 border-t bg-white">
                     <div contenteditable="true" id="log-input" class="w-full p-4 border rounded outline-none text-sm min-h-[80px]"></div>
-                    <div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div>
+                    <div class="flex justify-end mt-3"><button onclick="AppEngine.lancarLog('${id}')" class="bg-[#27784a] text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div>
                 </div>
             </div>
             <div class="secao-card">
@@ -1803,29 +1922,31 @@ window.RenderEngine = {
                             const podeEditar = canEdit && !outroAtrib;
                             const avatarHtml = atribUid
                                 ? (atribFoto
-                                    ? `<img src="${atribFoto}" title="${atribNome||''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #7c3aed;">`
-                                    : `<span title="${atribNome||''}" style="width:24px;height:24px;border-radius:50%;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;border:2px solid #7c3aed;">${(atribNome||'?')[0].toUpperCase()}</span>`)
+                                    ? `<img src="${atribFoto}" title="${atribNome||''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #1a4d8f;">`
+                                    : `<span title="${atribNome||''}" style="width:24px;height:24px;border-radius:50%;background:#1a4d8f;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;border:2px solid #1a4d8f;">${(atribNome||'?')[0].toUpperCase()}</span>`)
                                 : '';
-                            const lockIcon = outroAtrib ? `<i data-lucide="lock" style="width:13px;height:13px;color:#94a3b8;flex-shrink:0;" title="Atribuída a ${atribNome||'outro usuário'}"></i>` : '';
+                            const lockIcon = outroAtrib ? `<i data-lucide="lock" style="width:13px;height:13px;color:#b0b4bb;flex-shrink:0;" title="Atribuída a ${atribNome||'outro usuário'}"></i>` : '';
                             return `<li class="flex items-center gap-3 bg-white p-3 rounded border group${outroAtrib?' opacity-60':''}${minhaAtrib?' border-l-4 border-l-violet-400':''}">
-                                <div class="handle${outroAtrib?' pointer-events-none':''} text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
+                                <div class="handle${outroAtrib?' pointer-events-none':''} text-[#cdd1d8]"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
                                 <div contenteditable="${podeEditar}" onblur="RenderEngine.editP('${id}',${i},this.innerText)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;word-break:break-word;">${texto}</div>
                                 ${lockIcon}
                                 ${avatarHtml}
-                                ${podeEditar ? `<button onclick="RenderEngine.remP('${id}',${i})" class="text-red-300 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                                ${podeEditar ? `<button onclick="RenderEngine.remP('${id}',${i})" class="text-[#f87171] opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                             </li>`;
                         }).join('')}
                     </ul>
                 </div>
                 <div id="input-pendencia-area" class="hidden p-4 border-t bg-white">
                     <div contenteditable="true" id="pendencia-input" class="w-full p-4 border rounded outline-none text-sm min-h-[60px]"></div>
-                    <div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-emerald-600 text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div>
+                    <div class="flex justify-end mt-3"><button onclick="RenderEngine.addP('${id}')" class="bg-[#27784a] text-white px-4 py-2 rounded text-[10px] font-black uppercase">Adicionar</button></div>
                 </div>
             </div>
             <div id="btn-topo-edicao" style="display:none;justify-content:center;padding:16px 16px calc(var(--bottom-nav-h, 0px) + var(--safe-bottom, 0px) + 24px);">
-                <button onclick="document.getElementById('painel-rolagem').scrollTop=0" style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#1e293b;color:#94a3b8;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;"><i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo</button>
+                <button onclick="document.getElementById('painel-rolagem').scrollTop=0" style="display:flex;align-items:center;gap:8px;padding:12px 28px;background:#0d2137;color:#b0b4bb;border:none;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;"><i data-lucide="arrow-up" style="width:15px;height:15px;"></i> Voltar ao topo</button>
             </div>
         </div>`;
+        // Renderiza sidebar APÓS o painel estar pronto — evita que Sortable dispare onclick antes do tempo
+        this.renderListas();
         await this.updateLogUI(id);
         if (canEdit) {
             document.getElementById('edit-nome').addEventListener('keydown', function(e) {
@@ -1835,7 +1956,6 @@ window.RenderEngine = {
         Sortable.create(document.getElementById('prioridades-sort'), { animation: 150, handle: '.handle', onEnd: async () => {
             const textos = Array.from(document.querySelectorAll('#prioridades-sort [contenteditable]')).map(el => el.innerText);
             const passosAtuais = normalizarPassos(p.passos);
-            // Reordena os objetos de acordo com a nova ordem dos textos
             p.passos = textos.map(t => passosAtuais.find(x => x.texto === t) || { texto: t, atribuidoPara: null, atribuidoParaNome: null, atribuidoParaFoto: null });
             SyncUI.show('Salvando...', 'syncing');
             await StorageService.setDemanda(p);
@@ -1848,13 +1968,15 @@ window.RenderEngine = {
             if (btn && pr.scrollHeight > pr.clientHeight) btn.style.display = 'flex';
         });
         if (typeof MobileUI !== 'undefined' && MobileUI.isMobile()) MobileUI._showEdicao();
+        // Libera o guard
+        this._abrindo = false;
     },
 
     async updateLogUI(id) {
         const logs = await StorageService.getLogs(id);
         document.getElementById('logs-container').innerHTML = [...logs].reverse().map((l, i) => {
             const idx = logs.length - 1 - i;
-            return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-emerald-600 shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}',${idx},this)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;">${(l.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}',${idx})" class="text-slate-300"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}',${idx})" class="text-red-200 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
+            return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-[#27784a] shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}',${idx},this)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;">${(l.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}',${idx})" class="text-[#cdd1d8]"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}',${idx})" class="text-[#fcb0b0] opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
         }).join('');
         lucide.createIcons();
     },
@@ -1943,7 +2065,7 @@ window.RenderEngine = {
         document.getElementById('btn-salvar-geral').classList.add('hidden');
         document.getElementById('report-toolbar').style.display = 'flex';
         painel.style.display = 'block';
-        painel.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;"><div style="width:36px;height:36px;border:3px solid rgba(26,188,156,.2);border-top-color:#1abc9c;border-radius:50%;animation:spin .8s linear infinite;"></div><p style="font-family:Arial,sans-serif;font-size:14px;color:#64748b;">Preparando relatório...</p></div>`;
+        painel.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;"><div style="width:36px;height:36px;border:3px solid rgba(46,139,87,0.12);border-top-color:#2e8b57;border-radius:50%;animation:spin .8s linear infinite;"></div><p style="font-family:Arial,sans-serif;font-size:14px;color:#7a7a7a;">Preparando relatório...</p></div>`;
         await new Promise(r => setTimeout(r, 50));
         const filtroAtual = document.getElementById('filter-status').value;
         let itensFiltrados = AppEngine.db.filter(i => i.imprimirItem !== false);
@@ -1951,10 +2073,10 @@ window.RenderEngine = {
         let html = `<div class="folha-a4 doc-body" style="padding:20mm 25mm;"><div class="relatorio-titulo" style="margin:0;padding:0;">${AppEngine.config.subtitulo} - RELATÓRIO SEMANAL Nº ${(AppEngine.config.semana||'').replace(/\D/g,"")}/2026/${AppEngine.config.tituloComp}</div><div class="data-extenso">Brasília, ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</div><div class="mb-6"><strong>Assunto:</strong> Levantamento de Demandas - Período: ${AppEngine.config.periodo}</div>`;
         for (const [index, item] of itensFiltrados.entries()) {
             const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
-            const cor = item.status === 'urgente' ? '#ef4444' : item.status === 'pendente' ? '#facc15' : item.status === 'andamento' ? '#3b82f6' : item.status === 'aguardando' ? '#94a3b8' : '#10b981';
-            html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? normalizarPassos(item.passos).map(px => `• ${px.texto}`).join('\n') : 'Nenhuma.'}</div>${logs.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logs.map(l => `<span style="font-size:9pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n')}</div>` : ''}</div>`;
+            const cor = item.status === 'urgente' ? '#E53E3E' : item.status === 'pendente' ? '#FFD000' : item.status === 'andamento' ? '#1a4d8f' : item.status === 'aguardando' ? '#b0b4bb' : '#27784a';
+            html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? normalizarPassos(item.passos).map(px => `• ${px.texto}`).join('\n') : 'Nenhuma.'}</div>${logs.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logs.map(l => `<span style="font-size:9pt;color:#2e8b57;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n')}</div>` : ''}</div>`;
         }
-        html += `<div style="margin-top:40px;font-size:9pt;color:#94a3b8;">SGD - ${AppEngine.config.tituloComp} · Gerado em: ${formatarDT(new Date())}</div></div>`;
+        html += `<div style="margin-top:40px;font-size:9pt;color:#b0b4bb;">SGD - ${AppEngine.config.tituloComp} · Gerado em: ${formatarDT(new Date())}</div></div>`;
         painel.innerHTML = html;
     },
 
@@ -1966,7 +2088,7 @@ window.RenderEngine = {
         document.getElementById('btn-salvar-geral').classList.add('hidden');
         document.getElementById('report-toolbar').style.display = 'flex';
         painel.style.display = 'block';
-        painel.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;"><div style="width:36px;height:36px;border:3px solid rgba(26,188,156,.2);border-top-color:#1abc9c;border-radius:50%;animation:spin .8s linear infinite;"></div><p style="font-family:Arial,sans-serif;font-size:14px;color:#64748b;">Preparando relatório...</p></div>`;
+        painel.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;"><div style="width:36px;height:36px;border:3px solid rgba(46,139,87,0.12);border-top-color:#2e8b57;border-radius:50%;animation:spin .8s linear infinite;"></div><p style="font-family:Arial,sans-serif;font-size:14px;color:#7a7a7a;">Preparando relatório...</p></div>`;
         await new Promise(r => setTimeout(r, 50));
         const filtroAtual = document.getElementById('filter-status').value;
         let itensFiltrados = AppEngine.db.filter(i => i.imprimirItem !== false);
@@ -1978,7 +2100,7 @@ window.RenderEngine = {
             const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
             let demandaTexto = `\n<strong>>>> ${index + 1}. ${item.nome.toUpperCase()}</strong>\n\n`;
             demandaTexto += `CONTEXTO:\n${item.processo || 'N/A'}\n\n`;
-            demandaTexto += `HISTÓRICO:\n${logs.length ? logs.map(l => `<span style="font-size:8.5pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n') : 'N/A'}\n\n`;
+            demandaTexto += `HISTÓRICO:\n${logs.length ? logs.map(l => `<span style="font-size:8.5pt;color:#2e8b57;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n') : 'N/A'}\n\n`;
             demandaTexto += `PENDÊNCIAS:\n${item.passos.length ? normalizarPassos(item.passos).map(p => `• ${p.texto}`).join('\n') : 'Nenhuma.'}\n\n`;
             demandaTexto += `############################################################################################\n`;
             bufferTexto += demandaTexto;
@@ -2005,7 +2127,7 @@ window.RenderEngine = {
             const lb   = ()     => p10('&nbsp;');
             const p11  = (txt)  => `<p class="MsoNormal" style="${ST}font-size:11pt;font-weight:normal;">${txt}</p>`;
             const p11b = (txt)  => `<p class="MsoNormal" style="${ST}font-size:11pt;font-weight:bold;">${txt}</p>`;
-            const p8   = (dt, resto) => `<p class="MsoNormal" style="${ST}font-size:8pt;"><span style="color:#1abc9c;font-size:8pt;font-weight:normal;">${dt}</span><span style="font-size:10pt;"> ${resto}</span></p>`;
+            const p8   = (dt, resto) => `<p class="MsoNormal" style="${ST}font-size:8pt;"><span style="color:#2e8b57;font-size:8pt;font-weight:normal;">${dt}</span><span style="font-size:10pt;"> ${resto}</span></p>`;
             let corpo = '<div class="WordSection1">';
             corpo += p11b(tituloRel);
             corpo += p10(SUBLINHADO);
@@ -2173,7 +2295,8 @@ window.startApp = async function startApp() {
     // Carrega lista de usuários para resolver nomes (todos os roles)
     AppEngine._usuarios = await StorageService.getTodosUsuarios();
 
-    // Se admin, busca TODAS as demandas e popula dropdown de impersonação
+    // Admin carrega TODAS as demandas sem filtro algum
+    // O "sumir da lista" após atribuir acontece apenas em tempo real via confirmar()
     if (isAdmin) {
         AppEngine.db = await StorageService.getTodasDemandas();
         await ImpersonationEngine.popularDropdown(AppEngine._usuarios);
@@ -2190,6 +2313,8 @@ window.startApp = async function startApp() {
     if (isAdmin) {
         document.getElementById('nav-admin-item').classList.remove('hidden');
         document.getElementById('btn-olho-admin').classList.remove('hidden');
+        // Badge: demandas atribuídas a outros sem visivelParaCriador
+        NotifEngine.checar();
     }
 
     SyncUI.show('Conectado', 'ok');
@@ -2238,6 +2363,32 @@ window.addEventListener('keydown', e => {
     const altS  = e.altKey && (e.key === 's' || e.key === 'S');
     if (ctrlS || altS) { e.preventDefault(); AppEngine.salvarAlteracoesPagina(); }
 });
+
+// ─────────────────────────────────────────────
+// NOTIF ENGINE — badge de novas atribuições
+// ─────────────────────────────────────────────
+window.NotifEngine = {
+    checar() {
+        if (!AppEngine.isAdmin) return;
+        const uid = AppEngine.currentUser?.uid;
+        // Conta demandas criadas por este usuário que foram atribuídas a outros
+        const atribuidas = AppEngine.db.filter(d => {
+            if (d.criadoPor && d.criadoPor !== uid) return false; // não criadas por mim
+            const arr = Array.isArray(d.atribuidoPara) ? d.atribuidoPara : (d.atribuidoPara ? [d.atribuidoPara] : []);
+            return arr.length > 0;
+        });
+        // Conta demandas de qualquer usuário sem criadoPor (legadas) com atribuição
+        const total = atribuidas.length;
+        const badge = document.getElementById('notif-badge-admin');
+        if (!badge) return;
+        if (total > 0) {
+            badge.textContent = total > 9 ? '9+' : total;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+};
 
 // ═══ MOBILE UI ═══
 window.MobileUI = {
