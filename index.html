@@ -215,22 +215,22 @@
  .topo-brand-wrap { display:flex; align-items:center; gap:14px; min-width:0; }
  .topo-brand-text { position:relative; min-width:0; }
  .topo-brand-title { margin:0; color:#334155; font-size:1.45rem; font-weight:400; line-height:1; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
- .topo-brand-meta { position:absolute; left:0; top:100%; margin-top:2px; display:flex; align-items:center; gap:8px; font-size:9.5px; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+ .topo-brand-meta { position:absolute; left:0; top:100%; margin-top:2px; display:flex; align-items:center; gap:8px; font-size:9.5px; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; white-space:nowrap; }
  .topo-brand-divider { color:#cbd5e1; }
  .scope-toggle-wrap { display:none; align-items:center; margin-left:auto; }
- .scope-pills { display:inline-flex; align-items:center; gap:1px; padding:1px; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; }
+ .scope-pills { display:inline-flex; align-items:center; gap:1px; padding:1px; background:#fff; border:1px solid #e2e8f0; border-radius:6px; }
  .scope-pill { border:none; background:transparent; color:#64748b; padding:4px 10px; border-radius:5px; font-size:10px; font-weight:600; display:flex; align-items:center; gap:5px; cursor:pointer; transition:all .18s ease; white-space:nowrap; }
  .scope-pill:hover { background:#f8fafc; color:#334155; }
  .scope-pill:hover i { color:#334155; }
- .scope-pill.active { background:#1abc9c; color:#ffffff; box-shadow:0 1px 3px rgba(26,188,156,0.3); }
- .scope-pill.active i { color:#ffffff; }
+ .scope-pill.active { background:#1abc9c; color:#fff; box-shadow:0 1px 3px rgba(26,188,156,.3); }
+ .scope-pill.active i { color:#fff; }
  .scope-pill i { width:13px; height:13px; color:#94a3b8; transition:color .18s; }
- @media (max-width: 1279px) { .scope-pill span { display:none; } .scope-pill { padding:5px 8px; } }
- @media (max-width: 1023px) {
-   .topo-brand-wrap { gap:10px; min-width:0; }
-   .topo-brand-title { font-size:1rem; }
-   .topo-brand-meta { font-size:8px; gap:5px; }
-   .scope-toggle-wrap { display:none !important; }
+ @media(max-width:1279px){.scope-pill span{display:none;}.scope-pill{padding:5px 8px;}}
+ @media(max-width:1023px){
+   .topo-brand-wrap{gap:10px;min-width:0;}
+   .topo-brand-title{font-size:1rem;}
+   .topo-brand-meta{font-size:8px;gap:5px;}
+   .scope-toggle-wrap{display:none!important;}
  }
         @media (max-width: 1023px) {
             .nav-item { padding: 14px 24px !important; }
@@ -526,7 +526,6 @@
                 </div>
             </div>
             <div class="flex gap-2 items-center">
-                <!-- f) Dropdown de usuários — só visível para admin -->
                 <div id="user-switch-wrap" class="items-center gap-1">
                     <i data-lucide="users" style="width:14px;height:14px;color:#7c3aed;flex-shrink:0;"></i>
                     <select id="user-switch-select" onchange="ImpersonationEngine.entrar(this.value)" title="Visualizar como outro usuário">
@@ -629,86 +628,53 @@ const LOGO_INFRA_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAA
 // DATE / SCOPE AUTOMATION
 // ─────────────────────────────────────────────
 window.DateAutomation = {
-    getWeekInfo(baseDate = new Date()) {
-        const date = new Date(baseDate);
-        date.setHours(0,0,0,0);
+    getWeekInfo(d = new Date()) {
+        const date = new Date(d); date.setHours(0,0,0,0);
         const day = date.getDay() || 7;
-        const monday = new Date(date);
-        monday.setDate(date.getDate() - (day - 1));
-        const friday = new Date(monday);
-        friday.setDate(monday.getDate() + 4);
-        const isoRef = new Date(date);
-        isoRef.setDate(date.getDate() + 4 - day);
-        const yearStart = new Date(isoRef.getFullYear(), 0, 1);
-        const week = Math.ceil((((isoRef - yearStart) / 86400000) + 1) / 7);
-        const pad = n => String(n).padStart(2, '0');
-        const sameMonth = monday.getMonth() === friday.getMonth() && monday.getFullYear() === friday.getFullYear();
-        const periodo = sameMonth
-            ? `${pad(monday.getDate())} A ${pad(friday.getDate())}/${pad(friday.getMonth()+1)}/${friday.getFullYear()}`
-            : `${pad(monday.getDate())}/${pad(monday.getMonth()+1)} A ${pad(friday.getDate())}/${pad(friday.getMonth()+1)}/${friday.getFullYear()}`;
-        return { week, monday, friday, periodo };
+        const mon = new Date(date); mon.setDate(date.getDate()-(day-1));
+        const fri = new Date(mon); fri.setDate(mon.getDate()+4);
+        const ref = new Date(date); ref.setDate(date.getDate()+4-day);
+        const y0 = new Date(ref.getFullYear(),0,1);
+        const week = Math.ceil((((ref-y0)/864e5)+1)/7);
+        const p = n => String(n).padStart(2,'0');
+        const same = mon.getMonth()===fri.getMonth() && mon.getFullYear()===fri.getFullYear();
+        const periodo = same
+            ? `${p(mon.getDate())} A ${p(fri.getDate())}/${p(fri.getMonth()+1)}/${fri.getFullYear()}`
+            : `${p(mon.getDate())}/${p(mon.getMonth()+1)} A ${p(fri.getDate())}/${p(fri.getMonth()+1)}/${fri.getFullYear()}`;
+        return { week, periodo };
     },
-    applyToConfig(config = {}) {
-        const info = this.getWeekInfo(new Date());
-        config.semanaAuto = `SEMANA ${info.week}`;
-        config.periodoAuto = info.periodo;
-        return config;
-    },
-    preview() {
-        const info = this.getWeekInfo(new Date());
-        return `SEMANA ${info.week} | ${info.periodo}`;
-    }
+    applyToConfig(c={}) { const i=this.getWeekInfo(); c.semanaAuto=`SEMANA ${i.week}`; c.periodoAuto=i.periodo; return c; },
+    preview() { const i=this.getWeekInfo(); return `SEMANA ${i.week} | ${i.periodo}`; }
 };
 window.ScopeEngine = {
-    _modo: 'panorama',
-    restaurar(config = {}) {
-        this._modo = config?._scopeMode || 'panorama';
-        this.syncUI();
-    },
-    getModo() { return this._modo; },
-    async setModo(modo) {
-        this._modo = modo;
-        this.syncUI();
-        if (AppEngine?.config) {
-            AppEngine.config._scopeMode = modo;
-            try { await StorageService.setConfig(AppEngine.config); } catch(e) {}
-        }
+    _modo:'panorama',
+    restaurar(c={}){ this._modo=c?._scopeMode||'panorama'; this.syncUI(); },
+    getModo(){ return this._modo; },
+    async setModo(m){
+        this._modo=m; this.syncUI();
+        if(AppEngine?.config){ AppEngine.config._scopeMode=m; try{await StorageService.setConfig(AppEngine.config);}catch(e){} }
         RenderEngine.renderListas();
-        if (document.getElementById('painel-dash')?.style.display === 'flex') DashEngine.abrir();
+        if(document.getElementById('painel-dash')?.style.display==='flex') DashEngine.abrir();
     },
-    filtrar(items = []) {
-        if (!(AppEngine?.isAdmin) || ImpersonationEngine?._ativo) return items;
-        const uid = AppEngine.currentUser?.uid;
-        if (!uid) return items;
-        if (this._modo === 'pessoal') {
-            return items.filter(i => {
-                const atrib = Array.isArray(i.atribuidoPara) ? i.atribuidoPara : (i.atribuidoPara ? [i.atribuidoPara] : []);
-                const souCriador = !i.criadoPor || i.criadoPor === uid;
-                return souCriador && atrib.length === 0;
-            });
-        }
-        if (this._modo === 'delegadas') {
-            return items.filter(i => {
-                const atrib = Array.isArray(i.atribuidoPara) ? i.atribuidoPara : (i.atribuidoPara ? [i.atribuidoPara] : []);
-                const fuiEnvolvido = atrib.includes(uid);
-                const deleguei = (i.criadoPor === uid) && atrib.length > 0;
-                return fuiEnvolvido || deleguei;
-            });
-        }
+    filtrar(items=[]){
+        if(!(AppEngine?.isAdmin)||ImpersonationEngine?._ativo) return items;
+        const uid=AppEngine.currentUser?.uid; if(!uid) return items;
+        if(this._modo==='pessoal') return items.filter(i=>{
+            const a=Array.isArray(i.atribuidoPara)?i.atribuidoPara:(i.atribuidoPara?[i.atribuidoPara]:[]);
+            return(!i.criadoPor||i.criadoPor===uid)&&a.length===0;
+        });
+        if(this._modo==='delegadas') return items.filter(i=>{
+            const a=Array.isArray(i.atribuidoPara)?i.atribuidoPara:(i.atribuidoPara?[i.atribuidoPara]:[]);
+            return a.includes(uid)||(i.criadoPor===uid&&a.length>0);
+        });
         return items;
     },
-    syncUI() {
-        const show = !!(AppEngine?.isAdmin) && !(ImpersonationEngine?._ativo);
-        const wrap = document.getElementById('scope-toggle-wrap');
-        if (wrap) wrap.style.display = show ? 'flex' : 'none';
-        document.querySelectorAll('#scope-toggle .scope-pill').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.scope === this._modo);
-        });
-        const mobileWrap = document.getElementById('mobile-scope-wrap');
-        if (mobileWrap) mobileWrap.style.display = show ? 'block' : 'none';
-        document.querySelectorAll('#mobile-scope-wrap .mobile-scope-option').forEach(opt => {
-            opt.classList.toggle('selected', opt.dataset.scope === this._modo);
-        });
+    syncUI(){
+        const show=!!(AppEngine?.isAdmin)&&!(ImpersonationEngine?._ativo);
+        const w=document.getElementById('scope-toggle-wrap'); if(w) w.style.display=show?'flex':'none';
+        document.querySelectorAll('#scope-toggle .scope-pill').forEach(b=>b.classList.toggle('active',b.dataset.scope===this._modo));
+        const mw=document.getElementById('mobile-scope-wrap'); if(mw) mw.style.display=show?'block':'none';
+        document.querySelectorAll('#mobile-scope-wrap .mobile-scope-option').forEach(o=>o.classList.toggle('selected',o.dataset.scope===this._modo));
         lucide.createIcons();
     }
 };
@@ -1404,8 +1370,7 @@ window.AppEngine = {
         document.getElementById('display-subtitulo').innerText = (this.config.subtitulo || this.currentUser?.area || '').toUpperCase();
         document.getElementById('display-semana').innerText = this.config.semanaAuto || '';
         document.getElementById('display-periodo').innerText = this.config.periodoAuto || '';
-        const autoPrev = document.getElementById('auto-periodo-preview');
-        if (autoPrev) autoPrev.textContent = DateAutomation.preview();
+        const _ap = document.getElementById('auto-periodo-preview'); if (_ap) _ap.textContent = DateAutomation.preview();
         document.getElementById('user-name-sidebar').innerText = this.currentUser?.nome || '';
         document.getElementById('user-role-sidebar').innerText = (this.isAdmin && !ImpersonationEngine?._ativo) ? 'Administrador' : (this.config.userRole || this.currentUser?.area || '');
         document.getElementById('user-area-sidebar').innerText = this.currentUser?.area || '';
@@ -1690,8 +1655,8 @@ window.Navigation = {
     toggleModal(id) {
         const m = document.getElementById(id);
         if (m.classList.contains('hidden')) {
-            if (id === 'modal-gestao') { document.getElementById('input-subtitulo').value = AppEngine.config.subtitulo; const autoPrev = document.getElementById('auto-periodo-preview'); if (autoPrev) autoPrev.textContent = DateAutomation.preview(); }
-            if (id === 'modal-titulo') { document.getElementById('prefixo-titulo').innerText = `RELATÓRIO SEMANAL Nº ${(AppEngine.config.semana||'').replace(/\D/g,"")}/2026/`; document.getElementById('input-titulo-comp').value = AppEngine.config.tituloComp; }
+            if (id === 'modal-gestao') { document.getElementById('input-subtitulo').value = AppEngine.config.subtitulo; const _ap = document.getElementById('auto-periodo-preview'); if (_ap) _ap.textContent = DateAutomation.preview(); }
+            if (id === 'modal-titulo') { document.getElementById('prefixo-titulo').innerText = `RELATÓRIO SEMANAL Nº ${(AppEngine.config.semanaAuto||'').replace(/\D/g,"")}/2026/`; document.getElementById('input-titulo-comp').value = AppEngine.config.tituloComp; }
         }
         m.classList.toggle('hidden');
     },
@@ -1733,7 +1698,7 @@ window.RenderEngine = {
         lucide.createIcons();
     },
 
-    toggleVisaoAdmin() { ScopeEngine.setModo(ScopeEngine.getModo() === 'panorama' ? 'pessoal' : 'panorama'); },
+    toggleVisaoAdmin() { ScopeEngine.setModo(ScopeEngine.getModo()==='panorama'?'pessoal':'panorama'); },
 
     _badgeAtribuicao(item) {
         const uid = AppEngine.currentUser?.uid;
@@ -2063,7 +2028,7 @@ window.RenderEngine = {
         const filtroAtual = document.getElementById('filter-status').value;
         let itensFiltrados = ScopeEngine.filtrar(AppEngine.db).filter(i => i.imprimirItem !== false);
         if (filtroAtual !== 'todos') itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
-        let html = `<div class="folha-a4 doc-body" style="padding:20mm 25mm;"><div class="relatorio-titulo" style="margin:0;padding:0;">${AppEngine.config.subtitulo} - RELATÓRIO SEMANAL Nº ${(AppEngine.config.semana||'').replace(/\D/g,"")}/2026/${AppEngine.config.tituloComp}</div><div class="data-extenso">Brasília, ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</div><div class="mb-6"><strong>Assunto:</strong> Levantamento de Demandas - Período: ${AppEngine.config.periodo}</div>`;
+        let html = `<div class="folha-a4 doc-body" style="padding:20mm 25mm;"><div class="relatorio-titulo" style="margin:0;padding:0;">${AppEngine.config.subtitulo} - RELATÓRIO SEMANAL Nº ${(AppEngine.config.semanaAuto||'').replace(/\D/g,"")}/2026/${AppEngine.config.tituloComp}</div><div class="data-extenso">Brasília, ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</div><div class="mb-6"><strong>Assunto:</strong> Levantamento de Demandas - Período: ${AppEngine.config.periodoAuto}</div>`;
         for (const [index, item] of itensFiltrados.entries()) {
             const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
             const cor = item.status === 'urgente' ? '#ef4444' : item.status === 'pendente' ? '#facc15' : item.status === 'andamento' ? '#3b82f6' : item.status === 'aguardando' ? '#94a3b8' : '#10b981';
@@ -2087,7 +2052,7 @@ window.RenderEngine = {
         let itensFiltrados = ScopeEngine.filtrar(AppEngine.db).filter(i => i.imprimirItem !== false);
         if (filtroAtual !== 'todos') itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
         let htmlPaginas = "";
-        let cabecalho = `<div style="margin:0;padding:0;font-weight:bold;border-bottom:2px solid #000;">${AppEngine.config.subtitulo.toUpperCase()} - RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana.toUpperCase()} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}</div>`;
+        let cabecalho = `<div style="margin:0;padding:0;font-weight:bold;border-bottom:2px solid #000;">${AppEngine.config.subtitulo.toUpperCase()} - RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semanaAuto.toUpperCase()} | PERÍODO: ${AppEngine.config.periodoAuto.toUpperCase()}</div>`;
         let bufferTexto = cabecalho;
         for (const [index, item] of itensFiltrados.entries()) {
             const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -2111,7 +2076,7 @@ window.RenderEngine = {
             let itensFiltrados = ScopeEngine.filtrar(AppEngine.db).filter(i => i.imprimirItem !== false);
             if (filtroAtual !== 'todos') itensFiltrados = itensFiltrados.filter(i => i.status === filtroAtual);
             if (itensFiltrados.length === 0) { alert("Nenhum conteúdo para copiar."); return; }
-            const tituloRel = `${AppEngine.config.subtitulo.toUpperCase()} - RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semana.toUpperCase()} | PERÍODO: ${AppEngine.config.periodo.toUpperCase()}`;
+            const tituloRel = `${AppEngine.config.subtitulo.toUpperCase()} - RELATÓRIO SIMPLIFICADO - ${AppEngine.config.semanaAuto.toUpperCase()} | PERÍODO: ${AppEngine.config.periodoAuto.toUpperCase()}`;
             const SUBLINHADO = '_'.repeat(84);
             const SEP = '#'.repeat(71);
             const estiloWord = `<style>body{font-family:Arial,sans-serif;font-size:10pt;color:#333;margin:0;padding:0;}p,li{margin:0;margin-top:0;margin-bottom:0;padding:0;font-family:Arial,sans-serif;font-size:10pt;}</style>`;
