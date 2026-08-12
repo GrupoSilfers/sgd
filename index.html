@@ -11,7 +11,7 @@
     <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, browserSessionPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -28,7 +28,7 @@
         const auth = getAuth(app);
 
         window._firestore = db;
-        window._firestoreLib = { doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where };
+        window._firestoreLib = { doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where, onSnapshot };
         window._auth = auth;
         window._authLib = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, browserSessionPersistence, setPersistence };
         window._firebaseReady = true;
@@ -1817,7 +1817,12 @@ window.RenderEngine = {
         const viewingUid = AppEngine.currentUser?.uid;
         const isOwner = p.criadoPor === viewingUid;
         const isAdmin = AppEngine.isAdmin && !ImpersonationEngine._ativo;
-        const canEdit = isOwner || isAdmin;
+        // Destinatário (usuário para quem a demanda foi atribuída) também tem acesso total de edição
+        const _atribArrTop = Array.isArray(p.atribuidoPara)
+            ? p.atribuidoPara
+            : (p.atribuidoPara ? [p.atribuidoPara] : []);
+        const isDestinatario = _atribArrTop.includes(viewingUid);
+        const canEdit = isOwner || isAdmin || isDestinatario;
 
         // Badge de atribuição + botão devolver (c) e info admin (d)
         // Helper: resolve nome pelo uid usando cache de usuários
@@ -2254,6 +2259,117 @@ window.AuthLayer = {
     }
 };
 
+// ─────────────────────────────────────────────
+// REALTIME SYNC — Camada 1 (onSnapshot)
+// Sincroniza em tempo real DUAS coleções:
+//   • 'demandas' → contexto, status, pendências (passos)
+//   • 'logs'     → histórico (coleção separada)
+// Com travas para não atrapalhar edição/relatórios/impersonação.
+// ─────────────────────────────────────────────
+window.RealtimeSync = {
+    _unsubDemandas: null,
+    _unsubLogs: null,
+    _ativo: false,
+    _timerD: null,
+    _timerL: null,
+    _snapD: null,
+
+    iniciar() {
+        if (this._ativo) return;
+        if (!window._firestore || !window._firestoreLib || !window._firestoreLib.onSnapshot) return;
+        const { collection, onSnapshot } = window._firestoreLib;
+        try {
+            // Ouvinte 1: coleção de DEMANDAS
+            this._unsubDemandas = onSnapshot(
+                collection(window._firestore, 'demandas'),
+                (snap) => {
+                    this._snapD = snap;
+                    clearTimeout(this._timerD);
+                    this._timerD = setTimeout(() => this._processarDemandas(this._snapD), 200);
+                },
+                (err) => { console.warn('RealtimeSync/demandas:', err && err.message); }
+            );
+            // Ouvinte 2: coleção de LOGS (histórico)
+            this._unsubLogs = onSnapshot(
+                collection(window._firestore, 'logs'),
+                (snap) => {
+                    clearTimeout(this._timerL);
+                    this._timerL = setTimeout(() => this._processarLogs(snap), 200);
+                },
+                (err) => { console.warn('RealtimeSync/logs:', err && err.message); }
+            );
+            this._ativo = true;
+        } catch (e) { console.warn('RealtimeSync init falhou:', e && e.message); }
+    },
+
+    parar() {
+        if (this._unsubDemandas) { try { this._unsubDemandas(); } catch (e) {} this._unsubDemandas = null; }
+        if (this._unsubLogs) { try { this._unsubLogs(); } catch (e) {} this._unsubLogs = null; }
+        clearTimeout(this._timerD); clearTimeout(this._timerL);
+        this._ativo = false;
+    },
+
+    // Travas comuns: impersonação e relatório aberto
+    _bloqueado() {
+        if (window.ImpersonationEngine && ImpersonationEngine._ativo) return true;
+        const toolbar = document.getElementById('report-toolbar');
+        if (toolbar && toolbar.style.display === 'flex') return true;
+        return false;
+    },
+
+    _editando() {
+        const ae = document.activeElement;
+        return !!ae && (
+            (ae.getAttribute && ae.getAttribute('contenteditable') === 'true') ||
+            ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA'
+        );
+    },
+
+    _processarDemandas(snap) {
+        if (!snap || this._bloqueado()) return;
+        const uid = AppEngine.currentUser && AppEngine.currentUser.uid;
+        if (!uid) return;
+        const todas = snap.docs.map(d => d.data());
+        AppEngine.db = AppEngine.isAdmin
+            ? todas
+            : todas.filter(item => StorageService._deveVerDemanda(item));
+        const editando = this._editando();
+        // Listas: sempre seguras
+        try { RenderEngine.renderListas(); } catch (e) {}
+        // Dashboard: só se visível
+        const dash = document.getElementById('painel-dash');
+        if (dash && dash.style.display === 'flex') {
+            try { DashEngine.render(dash); } catch (e) {}
+        }
+        // Painel de detalhes: só re-renderiza se NÃO estiver editando
+        if (AppEngine.itemAtivoId && !editando) {
+            const painel = document.getElementById('painel-rolagem');
+            if (painel && painel.style.display !== 'none') {
+                const existe = AppEngine.db.find(i => i.id === AppEngine.itemAtivoId);
+                if (existe) { try { RenderEngine.abrirDetalhes(AppEngine.itemAtivoId); } catch (e) {} }
+            }
+        }
+    },
+
+    _processarLogs(snap) {
+        if (!snap || this._bloqueado()) return;
+        if (!AppEngine.itemAtivoId) return;
+        // Só atualiza se o histórico da demanda ABERTA mudou
+        let mexeuNoAtivo = false;
+        try {
+            snap.docChanges().forEach(ch => {
+                if (ch.doc.id === String(AppEngine.itemAtivoId)) mexeuNoAtivo = true;
+            });
+        } catch (e) { mexeuNoAtivo = true; } // fallback: atualiza mesmo assim
+        if (!mexeuNoAtivo) return;
+        // Trava: não atropela quem edita um log inline
+        if (this._editando()) return;
+        const painel = document.getElementById('painel-rolagem');
+        if (!painel || painel.style.display === 'none') return;
+        try { RenderEngine.updateLogUI(AppEngine.itemAtivoId); } catch (e) {}
+    }
+};
+
 // ── INICIALIZAÇÃO ────────────────────────────────────────
 let _appStarted = false;
 window.startApp = async function startApp() {
@@ -2315,6 +2431,7 @@ window.startApp = async function startApp() {
     SyncUI.show('Conectado', 'ok');
     DashEngine.abrir();
     MobileUI.init();
+    RealtimeSync.iniciar();
 };
 
 function bootWithAuth() {
