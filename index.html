@@ -786,6 +786,11 @@ window.StorageService = {
         const { doc, setDoc } = this._lib;
         await setDoc(doc(this._db, 'demandas', String(item.id)), item);
     },
+    // Exclusao direta pelo id (independe de quem criou a demanda)
+    async deleteDemanda(id) {
+        const { doc, deleteDoc } = this._lib;
+        await deleteDoc(doc(this._db, 'demandas', String(id)));
+    },
 
     // ── CONFIG (por usuário) ──────────────────
     async getConfig() {
@@ -876,7 +881,7 @@ window.AtribuicaoEngine = {
 
     async abrir(demandaId) {
         this._demandaId = demandaId;
-        const demanda = AppEngine.db.find(i => i.id === demandaId);
+        const demanda = AppEngine.db.find(i => String(i.id) === String(demandaId));
         if (!demanda) return;
 
         // Normaliza passos para objetos se ainda forem strings
@@ -904,7 +909,7 @@ window.AtribuicaoEngine = {
 
     onUsuarioChange() {
         const uid = document.getElementById('atrib-usuario-select').value;
-        const demanda = AppEngine.db.find(i => i.id === this._demandaId);
+        const demanda = AppEngine.db.find(i => String(i.id) === String(this._demandaId));
         if (!uid || !demanda) {
             document.getElementById('atrib-pendencias-wrap').style.display = 'none';
             document.getElementById('atrib-manter-wrap').style.display = 'block';
@@ -962,7 +967,7 @@ window.AtribuicaoEngine = {
         const uid = document.getElementById('atrib-usuario-select').value;
         if (!uid) { alert('Selecione um usuário.'); return; }
 
-        const demanda = AppEngine.db.find(i => i.id === this._demandaId);
+        const demanda = AppEngine.db.find(i => String(i.id) === String(this._demandaId));
         if (!demanda) return;
 
         demanda.passos = normalizarPassos(demanda.passos);
@@ -1014,7 +1019,7 @@ window.AtribuicaoEngine = {
     },
 
     devolver(demandaId) {
-        const demanda = AppEngine.db.find(i => i.id === demandaId);
+        const demanda = AppEngine.db.find(i => String(i.id) === String(demandaId));
         if (!demanda) return;
         if (!confirm(`Devolver "${demanda.nome}" para ${demanda.criadoPorNome || 'o remetente'}?`)) return;
         demanda.atribuidoPara = null;
@@ -1034,7 +1039,7 @@ window.AtribuicaoEngine = {
     },
 
     remover(demandaId) {
-        const demanda = AppEngine.db.find(i => i.id === demandaId);
+        const demanda = AppEngine.db.find(i => String(i.id) === String(demandaId));
         if (!demanda) return;
         if (!confirm('Remover atribuição desta demanda?')) return;
 
@@ -2003,17 +2008,25 @@ window.RenderEngine = {
     },
 
     async excluirDemanda(id) {
-        if (confirm("Excluir esta demanda?")) {
-            AppEngine.db = AppEngine.db.filter(i => i.id !== id);
-            AppEngine.itemAtivoId = null;
-            document.getElementById('painel-rolagem').innerHTML = '';
-            document.getElementById('btn-salvar-geral').classList.add('hidden');
-            this.renderListas();
-            SyncUI.show('Excluindo...', 'syncing');
-            StorageService.setData(AppEngine.db)
-                .then(() => StorageService.deleteLogs(id))
-                .then(() => SyncUI.show('Excluído', 'ok'))
-                .catch(() => SyncUI.show('Erro', 'error'));
+        if (!confirm("Excluir esta demanda?")) return;
+        const alvo = String(id);
+        AppEngine.db = AppEngine.db.filter(i => String(i.id) !== alvo);
+        if (ImpersonationEngine._ativo) {
+            ImpersonationEngine._adminDb = ImpersonationEngine._adminDb.filter(i => String(i.id) !== alvo);
+        }
+        AppEngine.itemAtivoId = null;
+        document.getElementById('painel-rolagem').innerHTML = '';
+        document.getElementById('btn-salvar-geral').classList.add('hidden');
+        this.renderListas();
+        SyncUI.show('Excluindo...', 'syncing');
+        try {
+            await StorageService.deleteDemanda(alvo);
+            await StorageService.deleteLogs(alvo);
+            SyncUI.show('Excluído', 'ok');
+        } catch (e) {
+            console.error('Falha ao excluir no Firebase:', e);
+            SyncUI.show('Erro ao excluir', 'error');
+            alert('Não foi possível excluir no servidor (' + (e.code || e.message) + ').');
         }
     },
 
