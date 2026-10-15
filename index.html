@@ -278,6 +278,15 @@
             .bnav-item i{width:18px!important;height:18px!important;}
             .bnav-center{width:44px!important;height:44px!important;margin-bottom:4px!important;}
         }
+        /* ═══ PRAZO — chip e icone de relogio ═══ */
+        .prazo-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; border:1px solid #e2e8f0; color:#64748b; background:#fff; white-space:nowrap; }
+        .prazo-chip.ambar { color:#b45309; border-color:#fcd34d; background:#fffbeb; }
+        .prazo-chip.vermelho { color:#dc2626; border-color:#fecaca; background:#fef2f2; }
+        .prazo-chip.verde { color:#059669; border-color:#a7f3d0; background:#ecfdf5; }
+        .prazo-chip i, .prazo-chip svg { width:17px !important; height:17px !important; flex-shrink:0; }
+        .prazo-input { font-size:10px; padding:6px 8px; border:1px solid #e2e8f0; border-radius:4px; background:#fff; color:#334155; outline:none; }
+        .prazo-input:focus { border-color:#1abc9c; }
+        .prazo-icone-lista, svg.prazo-icone-lista { width:14px !important; height:14px !important; flex-shrink:0; }
 </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -844,6 +853,102 @@ window.StorageService = {
 // ─────────────────────────────────────────────
 // SYNC STATUS
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// PRAZO ENGINE — prazo opcional da demanda (dias corridos)
+// Campo gravado: item.prazo no formato 'AAAA-MM-DD'
+// ─────────────────────────────────────────────
+window.PrazoEngine = {
+    _parse(s) {
+        if (!s || typeof s !== 'string') return null;
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return null;
+        return new Date(+m[1], +m[2] - 1, +m[3]);
+    },
+    // Retorna { nivel: 'cinza'|'ambar'|'vermelho'|'verde', texto, dias } ou null se sem prazo
+    info(item) {
+        const d = this._parse(item && item.prazo);
+        if (!d) return null;
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        const dias = Math.round((d - hoje) / 864e5);
+        if (item.status === 'concluido') return { nivel: 'verde', texto: 'concluída', dias };
+        if (dias < 0)  return { nivel: 'vermelho', texto: `atrasada ${Math.abs(dias)}d`, dias };
+        if (dias === 0) return { nivel: 'vermelho', texto: 'vence hoje', dias };
+        if (dias === 1) return { nivel: 'ambar', texto: 'vence amanhã', dias };
+        if (dias <= 3) return { nivel: 'ambar', texto: `vence em ${dias}d`, dias };
+        return { nivel: 'cinza', texto: `vence em ${dias}d`, dias };
+    },
+    formatar(s) {
+        const d = this._parse(s);
+        if (!d) return '';
+        const p = n => String(n).padStart(2, '0');
+        return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+    },
+    // Icone de relogio na lista lateral: so aparece em risco (ambar/vermelho)
+    iconeLista(item) {
+        const i = this.info(item);
+        if (!i || (i.nivel !== 'ambar' && i.nivel !== 'vermelho')) return '';
+        const cor = i.nivel === 'vermelho' ? '#dc2626' : '#d97706';
+        return `<i data-lucide="clock" class="prazo-icone-lista" style="color:${cor};" title="Prazo: ${this.formatar(item.prazo)} — ${i.texto}"></i>`;
+    },
+    // Chip com texto relativo (painel da demanda)
+    chip(item) {
+        const i = this.info(item);
+        if (!i) return '';
+        const icone = i.nivel === 'verde' ? 'check' : 'clock';
+        return `<span class="prazo-chip ${i.nivel === 'cinza' ? '' : i.nivel}" title="Prazo: ${this.formatar(item.prazo)}"><i data-lucide="${icone}"></i>${i.texto}</span>`;
+    }
+};
+
+// ─────────────────────────────────────────────
+// LOG FORMAT — preserva paragrafos, quebras e negrito do historico
+// Armazena texto puro: quebras = \n ; negrito = **texto**
+// ─────────────────────────────────────────────
+window.LogFormat = {
+    _BLOCOS: ['P','DIV','LI','H1','H2','H3','H4','H5','H6','TR','BLOCKQUOTE','UL','OL','TABLE','SECTION','ARTICLE','HEADER','FOOTER','PRE'],
+    _IGNORAR: ['STYLE','SCRIPT','META','TITLE','LINK','XML','HEAD'],
+    extrair(el) {
+        let out = '';
+        const nl = () => { if (out && !out.endsWith('\n')) out += '\n'; };
+        const pesoNegrito = (node) => {
+            try { const w = window.getComputedStyle(node).fontWeight; return w === 'bold' || parseInt(w, 10) >= 600; } catch (e) { return false; }
+        };
+        const margemInferior = (node) => {
+            try { return parseFloat(window.getComputedStyle(node).marginBottom) || 0; } catch (e) { return 0; }
+        };
+        const walk = (node, emNegrito) => {
+            if (node.nodeType === 3) { out += node.nodeValue.replace(/\u00a0/g, ' ').replace(/[\r\n]+/g, ' '); return; }
+            if (node.nodeType !== 1) return;
+            const tag = node.tagName.toUpperCase();
+            if (this._IGNORAR.includes(tag) || tag.indexOf(':') !== -1 && !node.childNodes.length) return;
+            if (tag === 'BR') { out += '\n'; return; }
+            const bloco = this._BLOCOS.includes(tag);
+            if (bloco) nl();
+            if (tag === 'LI') out += '• ';
+            const negritoAqui = !emNegrito && (tag === 'B' || tag === 'STRONG' || pesoNegrito(node)) && (node.textContent || '').trim() !== '';
+            if (negritoAqui) out += '**';
+            node.childNodes.forEach(c => walk(c, emNegrito || negritoAqui));
+            if (negritoAqui) {
+                const m = out.match(/(\s*)$/); const fim = m ? m[1] : '';
+                out = out.slice(0, out.length - fim.length) + '**' + fim;
+            }
+            if (bloco) {
+                nl();
+                if ((tag === 'P' || /^H[1-6]$/.test(tag)) && margemInferior(node) > 0) out += '\n';
+            }
+        };
+        el.childNodes.forEach(c => walk(c, false));
+        return out
+            .replace(/\*\*\s*\*\*/g, '')
+            .replace(/[ \t]+\n/g, '\n')
+            .replace(/\n[ \t]+(?=\S)/g, m => '\n' + m.slice(1).replace(/^ +/, ''))
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    },
+    _esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); },
+    html(texto) { return this._esc(texto).replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>'); },
+    htmlComQuebras(texto) { return this.html(texto).replace(/\n/g, '<br>'); }
+};
+
 window.SyncUI = {
     _timer: null,
     show(msg, state = 'ok') {
@@ -1491,6 +1596,20 @@ window.AppEngine = {
             .catch(() => SyncUI.show('Erro ao salvar', 'error'));
     },
 
+    async salvarPrazo(id, valor) {
+        const item = AppEngine.db.find(i => String(i.id) === String(id));
+        if (!item) return;
+        const novo = valor || null;
+        if ((item.prazo || null) === novo) return;
+        item.prazo = novo;
+        RenderEngine.renderListas();
+        const chipWrap = document.getElementById('prazo-chip-wrap');
+        if (chipWrap) { chipWrap.innerHTML = PrazoEngine.chip(item); lucide.createIcons(); }
+        SyncUI.show('Salvando prazo...', 'syncing');
+        StorageService.setDemanda(item)
+            .then(() => SyncUI.show(novo ? 'Prazo salvo' : 'Prazo removido', 'ok'))
+            .catch(() => SyncUI.show('Erro ao salvar prazo', 'error'));
+    },
     async salvarProcesso(id) {
         const el = document.getElementById('edit-processo');
         if (!el) return;
@@ -1512,6 +1631,8 @@ window.AppEngine = {
         item.status = document.getElementById('edit-status').value;
         item.processo = document.getElementById('edit-processo').innerText;
         RenderEngine.renderListas();
+        const _chipWrap = document.getElementById('prazo-chip-wrap');
+        if (_chipWrap) { _chipWrap.innerHTML = PrazoEngine.chip(item); lucide.createIcons(); }
         SyncUI.show('Salvando...', 'syncing');
         StorageService.setDemanda(item)
             .then(() => SyncUI.show('Salvo', 'ok'))
@@ -1523,15 +1644,8 @@ window.AppEngine = {
 
     async lancarLog(id) {
         const input = document.getElementById('log-input');
-        // Usa innerHTML para preservar quebras de linha (<br> → \n)
-        const html = input.innerHTML;
-        const texto = html
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<div>/gi, '\n')
-            .replace(/<\/div>/gi, '')
-            .replace(/&nbsp;/gi, ' ')
-            .replace(/<[^>]+>/g, '')
-            .trim();
+        // Preserva paragrafos, quebras e negrito (inclusive texto colado do Outlook/Word)
+        const texto = LogFormat.extrair(input);
         if (!texto) return;
         const logs = await StorageService.getLogs(id);
         logs.push({ data: new Date().toISOString(), texto: texto, imprimir: true });
@@ -1596,7 +1710,18 @@ window.DashEngine = {
         const primeira = AppEngine.db.find(i => i.status === status);
         if (primeira) RenderEngine.abrirDetalhes(primeira.id);
     },
+    _arrastando: false,
+    _salvarOrdemPrioritarias(container) {
+        const ids = Array.from(container.querySelectorAll('.dash-item-row[data-id]')).map(el => String(el.getAttribute('data-id')));
+        AppEngine.config.ordemPrioritarias = ids;
+        if (ImpersonationEngine._ativo) { SyncUI.show('Ordem não salva (visualizando como outro usuário)', 'ok'); return; }
+        SyncUI.show('Salvando ordem...', 'syncing');
+        StorageService.setConfig(AppEngine.config)
+            .then(() => SyncUI.show('Ordem salva', 'ok'))
+            .catch(() => SyncUI.show('Erro ao salvar ordem', 'error'));
+    },
     render(painel) {
+        if (this._arrastando) return;
         const db = ScopeEngine.filtrar(AppEngine.db);
         const STATUS_ORDER = ['urgente','pendente','andamento','aguardando','concluido'];
         const STATUS_LABEL = { urgente:'Urgente', pendente:'Pendente', andamento:'Em Andamento', aguardando:'Aguardando', concluido:'Concluído' };
@@ -1610,12 +1735,35 @@ window.DashEngine = {
             { label:'Aguardando', valor:cont.aguardando, cor:'#94a3b8', borda:'#94a3b8', status:'aguardando' },
             { label:'Concluídas', valor:cont.concluido, cor:'#10b981', borda:'#10b981', status:'concluido' },
         ];
-        const urgentes = db.filter(i => i.status === 'urgente');
-        const prioritarias = STATUS_ORDER.filter(s => s !== 'urgente').flatMap(s => db.filter(i => i.status === s));
-        const rowItem = (i) =>
-            `<div class="dash-item-row" onclick="DashEngine.fechar();RenderEngine.abrirDetalhes('${i.id}')">
+        // PROXIMAS ACOES: somente demandas URGENTES
+        // 1) com prazo primeiro, da mais atrasada para a mais folgada; 2) demais em ordem alfabetica
+        const _porNome = (a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR');
+        const _acoesBase = db.filter(i => i.status === 'urgente');
+        const _comPrazo = _acoesBase.filter(i => PrazoEngine.info(i))
+            .sort((a, b) => (PrazoEngine.info(a).dias - PrazoEngine.info(b).dias) || _porNome(a, b));
+        const _semPrazo = _acoesBase.filter(i => !PrazoEngine.info(i)).sort(_porNome);
+        const urgentes = [..._comPrazo, ..._semPrazo];
+        // DEMANDAS PRIORITARIAS: ordem manual salva por usuario (config.ordemPrioritarias)
+        const _prioBase = STATUS_ORDER.filter(s => s !== 'urgente').flatMap(s => db.filter(i => i.status === s));
+        const _ordemSalva = Array.isArray(AppEngine.config && AppEngine.config.ordemPrioritarias) ? AppEngine.config.ordemPrioritarias.map(String) : [];
+        const _pos = id => { const k = _ordemSalva.indexOf(String(id)); return k === -1 ? Infinity : k; };
+        // 1) Com prazo (nao concluidas): fixas no topo, do prazo mais proximo/atrasado para o mais distante
+        const _temPrazoAtivo = i => i.status !== 'concluido' && !!PrazoEngine.info(i);
+        const prioFixas = _prioBase.filter(_temPrazoAtivo)
+            .sort((a, b) => (PrazoEngine.info(a).dias - PrazoEngine.info(b).dias) || _porNome(a, b));
+        // 2) Sem prazo: ordem manual (arrastar)
+        const prioLivres = _prioBase.filter(i => !_temPrazoAtivo(i))
+            .map((item, idx) => ({ item, idx }))
+            .sort((a, b) => { const pa = _pos(a.item.id), pb = _pos(b.item.id); if (pa !== pb) return pa - pb; return a.idx - b.idx; })
+            .map(x => x.item);
+        const prioritarias = [...prioFixas, ...prioLivres];
+        const rowItem = (i, opt = {}) =>
+            `<div class="dash-item-row" data-id="${i.id}" onclick="DashEngine.fechar();RenderEngine.abrirDetalhes('${i.id}')">
+                ${opt.arrastar ? `<span class="handle dash-handle" onclick="event.stopPropagation()" title="Arraste para reordenar" style="display:flex;align-items:center;flex-shrink:0;"><i data-lucide="grip-vertical" style="width:15px;height:15px;"></i></span>` : ''}
+                ${opt.fixo ? `<span title="Posição definida pelo prazo" style="display:inline-block;width:15px;flex-shrink:0;"></span>` : ''}
                 <span class="dash-dot" style="background:${STATUS_COLOR[i.status]};"></span>
                 <span style="text-transform:uppercase;font-size:11px;color:#1e293b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i.nome}</span>
+                ${opt.prazo ? PrazoEngine.chip(i) : ''}
                 <span style="font-size:9px;color:${STATUS_COLOR[i.status]};font-weight:600;margin-left:8px;flex-shrink:0;">${STATUS_LABEL[i.status]}</span>
             </div>`;
         painel.innerHTML = `
@@ -1659,16 +1807,25 @@ window.DashEngine = {
                 <div style="grid-column:3/5;display:flex;flex-direction:column;gap:.8rem;min-height:0;">
                     <div class="dash-card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
                         <p class="dash-kpi-label" style="margin-bottom:.5rem;flex-shrink:0;">Próximas Ações Recomendadas</p>
-                        <div style="overflow-y:auto;flex:1;">${urgentes.length?urgentes.map(i=>rowItem(i)).join(''):`<p style="font-size:11px;color:#94a3b8;padding:8px 10px;">Nenhuma demanda urgente.</p>`}</div>
+                        <div style="overflow-y:auto;flex:1;">${urgentes.length?urgentes.map(i=>rowItem(i,{prazo:true})).join(''):`<p style="font-size:11px;color:#94a3b8;padding:8px 10px;">Nenhuma demanda urgente.</p>`}</div>
                     </div>
                     <div class="dash-card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
                         <p class="dash-kpi-label" style="margin-bottom:.5rem;flex-shrink:0;">Demandas Prioritárias</p>
-                        <div style="overflow-y:auto;flex:1;">${prioritarias.length?prioritarias.map(i=>rowItem(i)).join(''):`<p style="font-size:11px;color:#94a3b8;padding:8px 10px;">Nenhuma demanda.</p>`}</div>
+                        <div style="overflow-y:auto;flex:1;">${prioritarias.length?`<div id="dash-prioritarias-fixas">${prioFixas.map(i=>rowItem(i,{fixo:true,prazo:true})).join('')}</div><div id="dash-prioritarias-list">${prioLivres.map(i=>rowItem(i,{arrastar:true,prazo:true})).join('')}</div>`:`<p style="font-size:11px;color:#94a3b8;padding:8px 10px;">Nenhuma demanda.</p>`}</div>
                     </div>
                 </div>
             </div>
         </div>`;
         lucide.createIcons();
+        const _lista = document.getElementById('dash-prioritarias-list');
+        if (_lista && typeof Sortable !== 'undefined' && prioLivres.length > 1) {
+            Sortable.create(_lista, {
+                animation: 150,
+                handle: '.dash-handle',
+                onStart: () => { DashEngine._arrastando = true; },
+                onEnd: () => { DashEngine._arrastando = false; DashEngine._salvarOrdemPrioritarias(_lista); }
+            });
+        }
     }
 };
 
@@ -1796,7 +1953,7 @@ window.RenderEngine = {
             div.setAttribute('data-id', p.id);
             div.onclick = () => { DashEngine.fechar(); this.abrirDetalhes(p.id); };
             const badge = this._badgeAtribuicao(p);
-            div.innerHTML = `<div class="flex items-center gap-2 flex-1 min-w-0"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div class="text-[11px] uppercase text-slate-700 flex items-center gap-1 flex-wrap min-w-0"><span class="truncate">${p.nome}</span>${badge}</div></div><div class="flex items-center gap-3 flex-shrink-0"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button><span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
+            div.innerHTML = `<div class="flex items-center gap-2 flex-1 min-w-0"><div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div><div class="text-[11px] uppercase text-slate-700 flex items-center gap-1 flex-wrap min-w-0"><span class="truncate">${p.nome}</span>${badge}</div></div><div class="flex items-center gap-3 flex-shrink-0"><button onclick="event.stopPropagation(); RenderEngine.toggleImp('${p.id}')" class="print-indicator ${p.imprimirItem === false ? 'print-active' : ''}"><i data-lucide="${p.imprimirItem === false ? 'file-x-2' : 'file-text'}" class="w-4 h-4"></i></button>${PrazoEngine.iconeLista(p)}<span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span></div>`;
             container.appendChild(div);
         });
         Sortable.create(container, { group: 'sidebar', animation: 150, handle: '.handle', onEnd: async (e) => {
@@ -1891,7 +2048,7 @@ window.RenderEngine = {
                         ${canEdit ? `<i data-lucide="pencil" style="width:16px;height:16px;color:#94a3b8;flex-shrink:0;cursor:text;" title="Clique no título para editar"></i>` : ''}
                     </div>
                     <p class="text-[10px] text-slate-400 font-normal uppercase mt-2">CRIADO EM ${p.dataReg} · ${p.criadoPorNome || ''}</p>
-                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">${atribBadgeHtml}</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;"><span id="prazo-chip-wrap">${PrazoEngine.chip(p)}</span>${atribBadgeHtml}</div>
                 </div>
                 <div class="flex gap-2" style="flex-wrap:wrap;">
                     ${atribBtn}
@@ -1902,6 +2059,7 @@ window.RenderEngine = {
                         <option value="aguardando" ${p.status==='aguardando'?'selected':''}>⚪ AGUARDANDO</option>
                         <option value="concluido" ${p.status==='concluido'?'selected':''}>🟢 CONCLUÍDO</option>
                     </select>
+                    <input type="date" id="edit-prazo" class="prazo-input" title="Prazo (opcional)" value="${p.prazo || ''}" ${canEdit?'':'disabled'} onchange="AppEngine.salvarPrazo('${id}', this.value)">
                     ${canEdit ? `<button onclick="RenderEngine.excluirDemanda('${id}')" class="p-2 border rounded text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                 </div>
             </div>
@@ -1982,7 +2140,7 @@ window.RenderEngine = {
         const logs = await StorageService.getLogs(id);
         document.getElementById('logs-container').innerHTML = [...logs].reverse().map((l, i) => {
             const idx = logs.length - 1 - i;
-            return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-emerald-600 shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}',${idx},this)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;">${(l.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}',${idx})" class="text-slate-300"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}',${idx})" class="text-red-200 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
+            return `<div class="flex items-start gap-4 p-3 bg-white border rounded group ${l.imprimir?'':'opacity-40'}"><span class="text-[10px] text-emerald-600 shrink-0 mt-1">${formatarDT(l.data)}</span><div contenteditable="true" onblur="RenderEngine.edL('${id}',${idx},this)" class="flex-1 text-sm outline-none" style="white-space:pre-wrap;">${LogFormat.htmlComQuebras(l.texto)}</div><div class="flex gap-2 mt-1"><button onclick="RenderEngine.togL('${id}',${idx})" class="text-slate-300"><i data-lucide="${l.imprimir?'file-text':'file-x-2'}" class="w-4 h-4"></i></button><button onclick="RenderEngine.exL('${id}',${idx})" class="text-red-200 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
         }).join('');
         lucide.createIcons();
     },
@@ -2031,15 +2189,7 @@ window.RenderEngine = {
     },
 
     async edL(id, idx, el) {
-        const texto = el.innerHTML
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<div>/gi, '\n')
-            .replace(/<\/div>/gi, '')
-            .replace(/&nbsp;/gi, ' ')
-            .replace(/&amp;/gi, '&')
-            .replace(/&lt;/gi, '<')
-            .replace(/<[^>]+>/g, '')
-            .trim();
+        const texto = LogFormat.extrair(el);
         const l = await StorageService.getLogs(id);
         l[idx].texto = texto;
         await StorageService.setLogs(id, l);
@@ -2088,7 +2238,7 @@ window.RenderEngine = {
         for (const [index, item] of itensFiltrados.entries()) {
             const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
             const cor = item.status === 'urgente' ? '#ef4444' : item.status === 'pendente' ? '#facc15' : item.status === 'andamento' ? '#3b82f6' : item.status === 'aguardando' ? '#94a3b8' : '#10b981';
-            html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? normalizarPassos(item.passos).map(px => `• ${px.texto}`).join('\n') : 'Nenhuma.'}</div>${logs.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logs.map(l => `<span style="font-size:9pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n')}</div>` : ''}</div>`;
+            html += `<div class="doc-section"><div class="doc-item-header"><span style="width:10px;height:10px;border-radius:50%;background:${cor}"></span><span class="doc-item-title">${index + 1}. ${item.nome.toUpperCase()}</span></div><span class="doc-label">CONTEXTO</span><div class="doc-content">${item.processo || 'N/A'}</div><span class="doc-label">PENDÊNCIAS</span><div class="doc-content">${item.passos.length ? normalizarPassos(item.passos).map(px => `• ${px.texto}`).join('\n') : 'Nenhuma.'}</div>${logs.length ? `<span class="doc-label">HISTÓRICO</span><div class="doc-content">${logs.map(l => `<span style="font-size:9pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${LogFormat.html(l.texto)}`).join('\n')}</div>` : ''}</div>`;
         }
         html += `<div style="margin-top:40px;font-size:9pt;color:#94a3b8;">SGD - ${AppEngine.config.tituloComp} · Gerado em: ${formatarDT(new Date())}</div></div>`;
         painel.innerHTML = html;
@@ -2114,7 +2264,7 @@ window.RenderEngine = {
             const logs = (await StorageService.getLogs(item.id)).filter(l => l.imprimir).sort((a, b) => new Date(b.data) - new Date(a.data));
             let demandaTexto = `\n<strong>>>> ${index + 1}. ${item.nome.toUpperCase()}</strong>\n\n`;
             demandaTexto += `CONTEXTO:\n${item.processo || 'N/A'}\n\n`;
-            demandaTexto += `HISTÓRICO:\n${logs.length ? logs.map(l => `<span style="font-size:8.5pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${l.texto}`).join('\n') : 'N/A'}\n\n`;
+            demandaTexto += `HISTÓRICO:\n${logs.length ? logs.map(l => `<span style="font-size:8.5pt;color:#1abc9c;font-weight:bold;">${formatarDT(l.data)}</span> ${LogFormat.html(l.texto)}`).join('\n') : 'N/A'}\n\n`;
             demandaTexto += `PENDÊNCIAS:\n${item.passos.length ? normalizarPassos(item.passos).map(p => `• ${p.texto}`).join('\n') : 'Nenhuma.'}\n\n`;
             demandaTexto += `############################################################################################\n`;
             bufferTexto += demandaTexto;
@@ -2155,7 +2305,7 @@ window.RenderEngine = {
                 else corpo += p10('N/A');
                 corpo += lb();
                 corpo += p11('HISTÓRICO:');
-                if (logs.length) { logs.forEach(l => { const linhas = l.texto.split('\n'); linhas.forEach((linha, li) => { if (li === 0) corpo += p8(formatarDT(l.data), linha); else corpo += p10(linha || '&nbsp;'); }); }); } else corpo += p10('N/A');
+                if (logs.length) { logs.forEach(l => { const linhas = l.texto.split('\n'); linhas.forEach((linha, li) => { if (li === 0) corpo += p8(formatarDT(l.data), LogFormat.html(linha)); else corpo += p10(LogFormat.html(linha) || '&nbsp;'); }); }); } else corpo += p10('N/A');
                 corpo += lb();
                 corpo += p11('PENDÊNCIAS:');
                 if (item.passos.length) { normalizarPassos(item.passos).forEach(p => { p.texto.split('\n').forEach((linha, li) => corpo += p10((li === 0 ? '• ' : '') + (linha || ''))); }); } else corpo += p10('Nenhuma.');
